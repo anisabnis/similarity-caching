@@ -4,6 +4,42 @@ import numpy as np
 import scipy.stats as stats
 from nearpy import Engine
 from nearpy.hashes import RandomBinaryProjections
+import matplotlib.pyplot as plt
+
+# new random covar
+def new_random_cov(n):
+    if n == 1:
+        return random.uniform(0.05, 1)
+    # random matrix generation
+    A = []
+    for i in range(0, n):
+        A.append([])
+        for j in range(0, n):
+            A[i].append([])
+    for i in range(0, n):
+        for j in range(0, n):
+            A[i][j] = np.random.triangular(-1, 1, 0)
+    A = np.array(A)
+    B = np.matmul(A, A.transpose())
+    C = np.zeros((n, n))
+    for i in range(0, n):
+        diago = 1 / math.sqrt(B[i][i])
+        C[i][i] = diago
+    first_mol = np.matmul(C, B)
+    C = np.matmul(first_mol, C)
+    D = np.zeros((n, n))
+    for i in range(0, n):
+        diago = np.random.uniform(0.05, 1)
+        D[i][i] = diago
+    first_mol = np.matmul(D, C)
+    res = np.matmul(first_mol, D)
+    return res
+
+
+def random_cov(n):
+    M = np.identity(n)
+    M = M * 0.05
+    return M
 
 
 """ All attributes of a cache object """
@@ -20,14 +56,18 @@ class CacheObject:
 """ All attributes and functions of a cache """
 class Cache:
     def __init__(self, capacity, dim, learning_rate):
-        self.cache = np.random.rand(capacity, dim)
-        print(self.cache)
+        #self.cache = np.random.rand(capacity, dim)
+        self.cache = {}
+        for index in range(capacity):
+            v = np.random.rand(dim)
+            self.cache[index] = v
+
         self.alpha = learning_rate
         self.capacity = capacity
         self.initializeLSH(dim)        
         
     def initializeLSH(self, dim):
-        rbp = RandomBinaryProjections('rbp', 5)
+        rbp = RandomBinaryProjections('rbp', 7)
         self.engine = Engine(dim, lshashes=[rbp])
 
         for index in range(self.capacity):
@@ -38,7 +78,27 @@ class Cache:
         self.engine.delete_vector(str(src_object_id))
         self.engine.store_vector(dst_obj.pos, '%d' % dst_obj.id)
     
+    def updateCacheDict(self, src_object_id, dst_obj):
+        self.cache.pop(src_object_id, None)
+        self.cache[dst_obj.id] = dst_obj.pos
+
     def findNearest(self, vec):
+        ## Loop through the cache and find the nearest
+        nearest_point = []
+        min_dst = 1000
+        min_id = 0
+
+        for index in self.cache:
+            if np.linalg.norm(self.cache[index] - vec) < min_dst:
+                nearest_point = self.cache[index]
+                min_dst = np.linalg.norm(self.cache[index] - vec)
+                min_id = index
+
+        #print("K : ", vec, nearest_point, min_dst, min_id)        
+        return [nearest_point, min_id]            
+            
+
+    def findNearestANN(self, vec):
         K = self.engine.neighbours(vec)
 
         nearest_point = K[0][0]
@@ -51,12 +111,12 @@ class Cache:
                 min_dst = np.linalg.norm(K[k][0]-vec)
                 min_id = K[k][1]
 
-        print("K : ", vec, nearest_point, min_dst, min_id)        
+        #print("K : ", vec, nearest_point, min_dst, min_id)        
         return [nearest_point, min_id]
 
 
 """ Object Catalogue """
-class ObjectCatalogue:
+class ObjectCatalogueUniform:
     def __init__(self, no_objects, alpha, dim):
         
         self.catalogue = []
@@ -68,16 +128,66 @@ class ObjectCatalogue:
             self.catalogue.append(c_obj)
 
         N = no_objects
-        x = np.arange(1, N+1)
+        x = np.arange(1, N)
         a = alpha
         weights = x ** (-a)
         weights /= weights.sum()
         self.bounded_zipf = stats.rv_discrete(name='bounded_zipf', values=(x, weights))
 
+
+    def objective(self, cache):
+        obj = 0
+        for c_obj in self.catalogue:
+            min_dst = 10
+            for c in cache:
+                if np.linalg.norm(c_obj.pos - cache[c]) < min_dst:
+                    min_dst =  np.linalg.norm(c_obj.pos - cache[c])
+
+            obj += min_dst
+        return obj
+
+
     def getRequest(self):
         obj = self.catalogue[self.bounded_zipf.rvs(size=1)[0]]
         return obj
         
+""" Object Catalogue """
+class ObjectCatalogueGaussian:
+    def __init__(self, no_objects, centers, dim):
+        
+        self.catalogue = []
+        self.means = []
+        self.covs = []
+        self.no_objects = no_objects
+
+        for i in range(centers):
+            v = np.random.rand(dim)
+            #print(v)
+            c = random_cov(dim)
+            self.means.append(v)
+            self.covs.append(c)
+
+        for i in range(no_objects):
+            index = np.random.randint(0, centers)
+            loc = np.random.multivariate_normal(self.means[index], self.covs[index])
+            c_obj = CacheObject(i, loc)
+            self.catalogue.append(c_obj)
+
+    def getRequest(self):
+        index = np.random.randint(0, self.no_objects)
+        obj = self.catalogue[index]
+        return obj
+
+    def objective(self, cache):
+        obj = 0
+        for c_obj in self.catalogue:
+            min_dst = 10
+            for c in cache:
+                if np.linalg.norm(c_obj.pos - cache[c]) < min_dst:
+                    min_dst =  np.linalg.norm(c_obj.pos - cache[c])
+
+            obj += min_dst
+        return obj
 
 """ DescentMethods """
 class StochasticGradientDescent:
@@ -90,7 +200,9 @@ class StochasticGradientDescent:
             return 2 * (nearest_object - current_object)
 
         d = derivative(nearest_object, current_object)
-        return current_object - self.alpha * d
+        n = nearest_object - self.alpha * d
+        #print("Nearest : ", nearest_object, "derivative : ", d, "new obj : ", n)
+        return n
 
 
 """ Plot generation code """
@@ -98,6 +210,13 @@ class Plots:
     def __init__(self):
         pass
 
+    def plot(self, time_series):
+        plt.plot(time_series)
+        plt.ylabel("Objective")
+        plt.xlabel("iterations")
+        plt.grid()
+        plt.show()
+        
 
 
 

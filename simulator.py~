@@ -3,7 +3,7 @@ import argparse
 
 class Simulator:
     def __init__(self, dim, capacity, no_objects, alpha, iter, update_interval, learning_rate):
-        self.obj_catalogue = ObjectCatalogue(no_objects, alpha, dim)
+        self.obj_catalogue = ObjectCatalogueGaussian(no_objects, 5, dim)
         self.cache = Cache(capacity, dim, learning_rate)
         self.iter = iter
         self.u_interval = update_interval
@@ -17,10 +17,18 @@ class Simulator:
             if i % self.u_interval == 0:
                 new_object_loc = self.descent.descent(nearest_obj, obj.pos)
                 new_object = CacheObject(0, new_object_loc, 0)
-                self.cache.updateCache(nearest_object_id, new_object)
+                self.cache.updateCacheDict(nearest_object_id, new_object)
 
+            if i % 20 == 0:
+                print("obj : ", self.obj_catalogue.objective(self.cache.cache))
+                print("cache : ", self.cache)
 
-s = Simulator(2, 200, 10000, 0.8, 1000, 1, 0.001)
+        ## Cache content
+        print("Cache Content")
+        for index in self.cache.cache:
+            print(self.cache.cache[index])
+
+s = Simulator(2, 5, 100, 0.8, 1000, 1, 0.0001)
 s.simulate()                
                 
                 
