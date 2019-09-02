@@ -5,41 +5,41 @@ import scipy.stats as stats
 from nearpy import Engine
 from nearpy.hashes import RandomBinaryProjections
 import matplotlib.pyplot as plt
+import math
 
 # new random covar
 def new_random_cov(n):
     if n == 1:
-        return random.uniform(0.05, 1)
+        return random.uniform(0.05, 0.1)
+
     # random matrix generation
     A = []
     for i in range(0, n):
         A.append([])
         for j in range(0, n):
             A[i].append([])
+
     for i in range(0, n):
         for j in range(0, n):
-            A[i][j] = np.random.triangular(-1, 1, 0)
+            A[i][j] = np.random.triangular(-0.1, 0, 0.1)
+
     A = np.array(A)
     B = np.matmul(A, A.transpose())
     C = np.zeros((n, n))
+
     for i in range(0, n):
         diago = 1 / math.sqrt(B[i][i])
         C[i][i] = diago
     first_mol = np.matmul(C, B)
     C = np.matmul(first_mol, C)
     D = np.zeros((n, n))
+
     for i in range(0, n):
-        diago = np.random.uniform(0.05, 1)
+        diago = np.random.uniform(0.05, 0.1)
         D[i][i] = diago
     first_mol = np.matmul(D, C)
     res = np.matmul(first_mol, D)
     return res
-
-
-def random_cov(n):
-    M = np.identity(n)
-    M = M * 0.05
-    return M
 
 
 """ All attributes of a cache object """
@@ -55,37 +55,50 @@ class CacheObject:
 
 """ All attributes and functions of a cache """
 class Cache:
-    def __init__(self, capacity, dim, learning_rate):
+    def __init__(self, capacity, dim, learning_rate, integral=False, grid_s=[313,313]):
         #self.cache = np.random.rand(capacity, dim)
+
         self.cache = {}
+        self.grid = grid_s
+        self.integral = integral
+
         for index in range(capacity):
-            v = np.random.rand(dim)
-            self.cache[index] = v
+            if integral == False:
+                v = np.random.rand(dim)
+                self.cache[index] = v
+            else:
+                ii = np.random.randint(0, grid_s[0])
+                jj = np.random.randint(0, grid_s[1])
+                self.cache[index] = np.array([ii,jj])
 
         self.alpha = learning_rate
         self.capacity = capacity
         self.initializeLSH(dim)        
         
     def initializeLSH(self, dim):
-        rbp = RandomBinaryProjections('rbp', 7)
+        rbp = RandomBinaryProjections('rbp', 2)
         self.engine = Engine(dim, lshashes=[rbp])
 
         for index in range(self.capacity):
             v = self.cache[index]
+            if self.integral == True:
+                v = v/self.grid[0]                
             self.engine.store_vector(v, '%d' % index)
 
     def updateCache(self, src_object_id, dst_obj):
+        #pass
         self.engine.delete_vector(str(src_object_id))
         self.engine.store_vector(dst_obj.pos, '%d' % dst_obj.id)
     
     def updateCacheDict(self, src_object_id, dst_obj):
-        self.cache.pop(src_object_id, None)
-        self.cache[dst_obj.id] = dst_obj.pos
+        self.updateCache(src_object_id, dst_obj)
+        #self.cache.pop(src_object_id, None)
+        #self.cache[dst_obj.id] = dst_obj.pos
 
     def findNearest(self, vec):
         ## Loop through the cache and find the nearest
         nearest_point = []
-        min_dst = 1000
+        min_dst = 10000
         min_id = 0
 
         for index in self.cache:
@@ -93,25 +106,21 @@ class Cache:
                 nearest_point = self.cache[index]
                 min_dst = np.linalg.norm(self.cache[index] - vec)
                 min_id = index
-
-        #print("K : ", vec, nearest_point, min_dst, min_id)        
         return [nearest_point, min_id]            
             
 
     def findNearestANN(self, vec):
         K = self.engine.neighbours(vec)
-
         nearest_point = K[0][0]
         min_dst = np.linalg.norm(K[0][0]-vec)
         min_id = K[0][1]
 
-        for k in range(len(K)):
-            if np.linalg.norm(K[k][0] - vec) < min_dst:
-                nearest_point = K[k][0]
-                min_dst = np.linalg.norm(K[k][0]-vec)
-                min_id = K[k][1]
+#         for k in range(len(K)):
+#             if np.linalg.norm(K[k][0] - vec) < min_dst:
+#                 nearest_point = K[k][0]
+#                 min_dst = np.linalg.norm(K[k][0]-vec)
+#                 min_id = K[k][1]
 
-        #print("K : ", vec, nearest_point, min_dst, min_id)        
         return [nearest_point, min_id]
 
 
@@ -150,7 +159,37 @@ class ObjectCatalogueUniform:
     def getRequest(self):
         obj = self.catalogue[self.bounded_zipf.rvs(size=1)[0]]
         return obj
+      
+
+class ObjectCatalogueGrid:
+    def __init__(self, dim_x, dim_y):
+        self.catalogue = []
+        self.dim_x = dim_x
+        self.dim_y = dim_y
         
+        self.obj_id = 0
+        for i in range(dim_x):
+            for j in range(dim_y):
+                c_obj = CacheObject(self.obj_id, [i,j])
+                self.catalogue.append(c_obj)
+                self.obj_id += 1
+                
+    def getRequest(self):
+        index = np.random.randint(0, self.obj_id)
+        obj = self.catalogue[index]
+        return obj
+        
+    def objective(self, cache):
+        obj = 0
+        for c_obj in self.catalogue:
+            min_dst = 10
+            for c in cache:
+                if np.linalg.norm(c_obj.pos - cache[c]) < min_dst:
+                    min_dst =  np.linalg.norm(c_obj.pos - cache[c])
+            obj += min_dst
+        return obj
+
+  
 """ Object Catalogue """
 class ObjectCatalogueGaussian:
     def __init__(self, no_objects, centers, dim):
@@ -161,9 +200,8 @@ class ObjectCatalogueGaussian:
         self.no_objects = no_objects
 
         for i in range(centers):
-            v = np.random.rand(dim)
-            #print(v)
-            c = random_cov(dim)
+            v = np.random.uniform(low=0.1, high=0.9, size=(dim,))
+            c = new_random_cov(dim)
             self.means.append(v)
             self.covs.append(c)
 
@@ -185,7 +223,6 @@ class ObjectCatalogueGaussian:
             for c in cache:
                 if np.linalg.norm(c_obj.pos - cache[c]) < min_dst:
                     min_dst =  np.linalg.norm(c_obj.pos - cache[c])
-
             obj += min_dst
         return obj
 
@@ -216,8 +253,29 @@ class Plots:
         plt.xlabel("iterations")
         plt.grid()
         plt.show()
-        
+        plt.clf()
 
+    def plot_cache_pos(self, cache, obj_means, cache_init):
+        cache_objs = list(cache.values())
+        xs = [l[0] for l in cache_objs]
+        ys = [l[1] for l in cache_objs]
+        plt.scatter(xs, ys, marker='+', label="cache")
+        
+        obj_cata = obj_means
+        xs = [l[0] for l in obj_cata]
+        ys = [l[1] for l in obj_cata]
+        plt.scatter(xs, ys, marker='*', label="obj_mean")
+
+        cache_objs = list(cache_init.values())
+        xs = [l[0] for l in cache_objs]
+        ys = [l[1] for l in cache_objs]
+        plt.scatter(xs, ys, marker='o', label="initial")
+        plt.legend()
+        plt.show()
+        plt.clf()
+        
+        
+        
 
 
             
