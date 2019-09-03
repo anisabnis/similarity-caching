@@ -40,13 +40,13 @@ class Simulator:
                 self.cache.updateCacheDict(nearest_obj, new_object)                
 
             if i % 100 == 0:
-                cache_points = self.cache.getAllPoints()
-                objective.append(self.obj_catalogue.objective_l1(cache_points))
+                print(i)
+                objective.append(self.obj_catalogue.objective_l1(self.cache))
                 
-        self.plot.plot_cache_pos_grid([self.cache.getAllPoints()], self.obj_catalogue.means, self.initial_points)
-        self.plot.plot(objective)        
+        self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points)
+        self.plot.plot(objective)
 
-s = Simulator(2, 100, 100, 0.4, 1800, 1, 0.001)
+s = Simulator(2, 31, 100, 0.4, 30000, 1, 0.01)
 s.simulate()                
                 
                 

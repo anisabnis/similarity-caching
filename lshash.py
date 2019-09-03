@@ -211,7 +211,6 @@ class LSHash(object):
         for i, table in enumerate(self.hash_tables):
             for key in table.keys():
                 all_points.extend(table.get_list(key))
-            print(all_points)
             return all_points
 
     def delete_vector(self, vec):

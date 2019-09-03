@@ -166,8 +166,8 @@ class ObjectCatalogueGrid:
                 pos = np.array([i,j])
                 c_obj = CacheObject(self.obj_id, pos)                
                 self.catalogue.append(c_obj)
+                self.means.append(pos)
                 self.obj_id += 1
-
                 
     def getRequest(self):
         index = np.random.randint(0, self.obj_id)
@@ -188,11 +188,14 @@ class ObjectCatalogueGrid:
     def objective_l1(self, cache):
         obj = 0
         for c_obj in self.catalogue:
-            min_dst = 10000
-            for c in cache:
-                if sum(abs(c_obj.pos - c)) < min_dst:
-                    min_dst = sum(abs(c_obj.pos - c))
-            obj += min_dst
+            K = cache.lsh.query(c_obj.pos)
+            obj += K[0][1]
+            #min_dst = 10000
+            #for c in cache:
+            #    if sum(abs(c_obj.pos - c)) < min_dst:
+            #        min_dst = sum(abs(c_obj.pos - c))
+            #obj += min_dst
+            
         return obj
 
   
@@ -293,12 +296,13 @@ class Plots:
         obj_cata = obj_means
         xs = [l[0] for l in obj_cata]
         ys = [l[1] for l in obj_cata]
-        plt.scatter(xs, ys, marker='*', label="obj_mean")
+        #plt.scatter(xs, ys, marker='*', label="obj_mean")
 
         cache_objs = cache_init #list(cache_init.values())
         xs = [l[0] for l in cache_objs]
         ys = [l[1] for l in cache_objs]
-        plt.scatter(xs, ys, marker='o', label="initial")
+        #plt.scatter(xs, ys, marker='o', label="initial")
+
         plt.legend()
         plt.show()
         plt.clf()
