@@ -75,23 +75,82 @@ class Cache:
 
     def getAllPoints(self):
         return self.lsh.get_all_points()
+
+
+    def extraPoints(self, v, delete=False):
+        if v.pos[0] < float(self.grid_s[0]/2):
+            if v.pos[1] < float(self.grid_s[1]/2):
+                first_point = np.array([v.pos[0] + self.grid_s[0], v.pos[1]])
+                second_point = np.array([v.pos[0], v.pos[1] + self.grid[1]])
+                third_point = np.array([v.pos[0] + self.grid_s[0], v.pos[0] + self.grid_s[1]])
+            else:
+                first_point = np.array([v.pos[0] + self.grid_s[0], v.pos[1]])
+                second_point = np.array([v.pos[0], v.pos[1] - self.grid[1]])
+                third_point = np.array([v.pos[0] + self.grid_s[0], v.pos[0] - self.grid_s[1]])
+                self.lsh.index(first_point)
+                self.lsh.index(second_point)
+                self.lsh.index(third_point)
+                                    
+        else :
+            if v.pos[0] >= float(self.grid_s[0]/2):
+                if v.pos[1] < float(self.grid_s[1]/2):
+                    first_point = np.array([v.pos[0] - self.grid_s[0], v.pos[1]])
+                    second_point = np.array([v.pos[0] , v.pos[1] + self.grid[1]])
+                    third_point = np.array([v.pos[0] - self.grid_s[0], v.pos[0] - self.grid_s[1]])
+                    self.lsh.index(first_point)
+                    self.lsh.index(second_point)
+                    self.lsh.index(third_point)                            
+                else:
+                    first_point = np.array([v.pos[0] - self.grid_s[0], v.pos[1]])
+                    second_point = np.array([v.pos[0], v.pos[1] - self.grid[1]])
+                    third_point = np.array([v.pos[0] - self.grid_s[0], v.pos[0] - self.grid_s[1]])
+                    self.lsh.index(first_point)
+                    self.lsh.index(second_point)
+                    self.lsh.index(third_point)
+                                                                                  
+        if delete == False:
+            self.lsh.index(first_point)
+            self.lsh.index(second_point)
+            self.lsh.index(third_point)
+        else:
+            self.lsh.delete_vector(first_point)
+            self.lsh.delete_vector(second_point)
+            self.lsh.delete_vector(third_point)            
+                    
+
+    def checkIfInGrid(self, v):
+        if v[0] > 0 and v[0] < self.grid_s[0] and v[1] > 0 and v[1] < self.grid_s[1]:
+            return True
+        else:
+            return False
+
+    def findOriginalPoint(self, v):
         
+    
     def initializeLSH(self, dim):        
         self.lsh = LSHash(3, dim, 10)
         for index in range(self.capacity):
             v = self.cache[index]
-            self.lsh.index(v)
-
+            if integral == False:
+                self.lsh.index(v)
+            else:
+                self.extraPoints(v)
+                
     def updateCache(self, src_obj_pos, dst_obj):
-        self.lsh.delete_vector(src_obj_pos)
+        if self.checkIfInGrid(src_obj_pos) == True:
+            self.lsh.delete_vector(src_obj_pos)
+        else :
+            v = self.findOriginalPoint(src_obj_pos)
+            self.lsh.delete_vector(v)
+            self.extraPoints(v, True)
+            
         self.lsh.index(dst_obj.pos)
     
     def updateCacheDict(self, src_obj_pos, dst_obj):
         self.updateCache(src_obj_pos, dst_obj)
-        #self.cache.pop(src_object_id, None)
-        #self.cache[dst_obj.id] = dst_obj.pos
 
     def findNearest(self, vec):
+
         ## Loop through the cache and find the nearest
         nearest_point = []
         min_dst = 10000
@@ -157,7 +216,6 @@ class ObjectCatalogueGrid:
         self.dim_x = dim_x
         self.dim_y = dim_y
         self.means = []
-
         self.obj_id = 0
 
         for i in range(dim_x):
@@ -174,6 +232,7 @@ class ObjectCatalogueGrid:
         obj = self.catalogue[index]
         return obj
         
+
     def objective(self, cache):
         obj = 0
         for c_obj in self.catalogue:
@@ -190,6 +249,7 @@ class ObjectCatalogueGrid:
         for c_obj in self.catalogue:
             K = cache.lsh.query(c_obj.pos)
             obj += K[0][1]
+
             #min_dst = 10000
             #for c in cache:
             #    if sum(abs(c_obj.pos - c)) < min_dst:
