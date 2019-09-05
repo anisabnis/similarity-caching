@@ -7,7 +7,7 @@ class Simulator:
         #self.obj_catalogue = ObjectCatalogueGaussian(no_objects, 2, dim)
         #self.obj_catalogue = ObjectCatalogueUniform(no_objects, 0.8, dim)
 
-        self.grid_d = 31
+        self.grid_d = 60
 
         self.obj_catalogue = ObjectCatalogueGrid(self.grid_d, self.grid_d)        
 
@@ -27,7 +27,8 @@ class Simulator:
 
     def simulate(self):
         objective = [] 
-        
+
+        count = 0
         for i in range(self.iter):
 
             obj = self.obj_catalogue.getRequest()
@@ -42,11 +43,12 @@ class Simulator:
             if i % 100 == 0:
                 print(i)
                 objective.append(self.obj_catalogue.objective_l1(self.cache))
-                
-        self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points)
+                self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points, count)
+                count += 1
+
         self.plot.plot(objective)
 
-s = Simulator(2, 31, 100, 0.4, 30000, 1, 0.01)
+s = Simulator(2, 60, 100, 0.4, 40000, 1, 0.05)
 s.simulate()                
                 
                 

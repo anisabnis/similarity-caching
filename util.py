@@ -263,7 +263,7 @@ class Plots:
         plt.ylabel("Objective")
         plt.xlabel("iterations")
         plt.grid()
-        plt.show()
+        plt.savefig("objective.png")
         plt.clf()
 
     def plot_cache_pos(self, cache, obj_means, cache_init):
@@ -287,7 +287,7 @@ class Plots:
         
 
 
-    def plot_cache_pos_grid(self, cache, obj_means, cache_init):
+    def plot_cache_pos_grid(self, cache, obj_means, cache_init, count):
         cache_objs = cache
         xs = [l[0] for l in cache_objs]
         ys = [l[1] for l in cache_objs]
@@ -304,7 +304,7 @@ class Plots:
         #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.show()
+        plt.savefig("cache_pos" + str(count) + ".png")
         plt.clf()
         
         
