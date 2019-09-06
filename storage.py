@@ -82,6 +82,7 @@ class InMemoryStorage(BaseStorage):
         return self.storage.get(key, [])
 
     def remove(self, key, vec):
+        vec = (vec[0], vec[1])
         self.storage[key] = [x for x in self.storage[key] if x != vec]
 
 

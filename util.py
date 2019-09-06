@@ -59,6 +59,7 @@ class Cache:
 
         self.cache = {}
         self.grid = grid_s
+        self.integral = integral
 
         for index in range(capacity):
             if integral == False:
@@ -78,32 +79,32 @@ class Cache:
 
 
     def extraPoints(self, v, delete=False):
-        if v.pos[0] < float(self.grid_s[0]/2):
-            if v.pos[1] < float(self.grid_s[1]/2):
-                first_point = np.array([v.pos[0] + self.grid_s[0], v.pos[1]])
-                second_point = np.array([v.pos[0], v.pos[1] + self.grid[1]])
-                third_point = np.array([v.pos[0] + self.grid_s[0], v.pos[0] + self.grid_s[1]])
+        if v[0] < float(self.grid[0]/2):
+            if v[1] < float(self.grid[1]/2):
+                first_point = np.array([v[0] + self.grid[0], v[1]])
+                second_point = np.array([v[0], v[1] + self.grid[1]])
+                third_point = np.array([v[0] + self.grid[0], v[1] + self.grid[1]])
             else:
-                first_point = np.array([v.pos[0] + self.grid_s[0], v.pos[1]])
-                second_point = np.array([v.pos[0], v.pos[1] - self.grid[1]])
-                third_point = np.array([v.pos[0] + self.grid_s[0], v.pos[0] - self.grid_s[1]])
+                first_point = np.array([v[0] + self.grid[0], v[1]])
+                second_point = np.array([v[0], v[1] - self.grid[1]])
+                third_point = np.array([v[0] + self.grid[0], v[1] - self.grid[1]])
                 self.lsh.index(first_point)
                 self.lsh.index(second_point)
                 self.lsh.index(third_point)
                                     
         else :
-            if v.pos[0] >= float(self.grid_s[0]/2):
-                if v.pos[1] < float(self.grid_s[1]/2):
-                    first_point = np.array([v.pos[0] - self.grid_s[0], v.pos[1]])
-                    second_point = np.array([v.pos[0] , v.pos[1] + self.grid[1]])
-                    third_point = np.array([v.pos[0] - self.grid_s[0], v.pos[0] - self.grid_s[1]])
+            if v[0] >= float(self.grid[0]/2):
+                if v[1] < float(self.grid[1]/2):
+                    first_point = np.array([v[0] - self.grid[0], v[1]])
+                    second_point = np.array([v[0] , v[1] + self.grid[1]])
+                    third_point = np.array([v[0] - self.grid[0], v[1] - self.grid[1]])
                     self.lsh.index(first_point)
                     self.lsh.index(second_point)
                     self.lsh.index(third_point)                            
                 else:
-                    first_point = np.array([v.pos[0] - self.grid_s[0], v.pos[1]])
-                    second_point = np.array([v.pos[0], v.pos[1] - self.grid[1]])
-                    third_point = np.array([v.pos[0] - self.grid_s[0], v.pos[0] - self.grid_s[1]])
+                    first_point = np.array([v[0] - self.grid[0], v[1]])
+                    second_point = np.array([v[0], v[1] - self.grid[1]])
+                    third_point = np.array([v[0] - self.grid[0], v[1] - self.grid[1]])
                     self.lsh.index(first_point)
                     self.lsh.index(second_point)
                     self.lsh.index(third_point)
@@ -119,21 +120,40 @@ class Cache:
                     
 
     def checkIfInGrid(self, v):
-        if v[0] > 0 and v[0] < self.grid_s[0] and v[1] > 0 and v[1] < self.grid_s[1]:
+        if v[0] >= 0 and v[0] <= self.grid[0] and v[1] >= 0 and v[1] <= self.grid[1]:
             return True
         else:
             return False
 
     def findOriginalPoint(self, v):
-        
+        x = 0
+        y = 0
+
+        if v[0] > self.grid[0]:
+            x = v[0] - self.grid[0]
+        elif v[0] < 0:
+            x = v[0] + self.grid[0]
+        else :
+            x = v[0]
+
+        if v[1] > self.grid[1]:
+            y = v[1] - self.grid[1]
+        elif v[1] < 0:
+            y = v[1] + self.grid[1]
+        else :
+            y = v[1]
+
+        return np.array([x,y])
+
     
     def initializeLSH(self, dim):        
         self.lsh = LSHash(3, dim, 10)
         for index in range(self.capacity):
             v = self.cache[index]
-            if integral == False:
+            if self.integral == False:
                 self.lsh.index(v)
             else:
+                self.lsh.index(v)
                 self.extraPoints(v)
                 
     def updateCache(self, src_obj_pos, dst_obj):
@@ -144,13 +164,17 @@ class Cache:
             self.lsh.delete_vector(v)
             self.extraPoints(v, True)
             
-        self.lsh.index(dst_obj.pos)
+        if self.checkIfInGrid(dst_obj.pos) == True:
+            self.lsh.index(dst_obj.pos)
+        else:
+            v = self.findOriginalPoint(dst_obj.pos)
+            self.extraPoints(v)
+
     
     def updateCacheDict(self, src_obj_pos, dst_obj):
         self.updateCache(src_obj_pos, dst_obj)
 
     def findNearest(self, vec):
-
         ## Loop through the cache and find the nearest
         nearest_point = []
         min_dst = 10000
@@ -347,10 +371,19 @@ class Plots:
         
 
 
-    def plot_cache_pos_grid(self, cache, obj_means, cache_init, count):
+    def checkIfInGrid(self, v, grid):
+        if v[0] >= 0 and v[0] <= grid[0] and v[1] >= 0 and v[1] <= grid[1]:
+            return True
+        else:
+            return False
+
+    def plot_cache_pos_grid(self, cache, obj_means, cache_init, count, grid):
         cache_objs = cache
+        cache_objs = [v for v in cache_objs if self.checkIfInGrid(v, grid) == True]
         xs = [l[0] for l in cache_objs]
+#        xs = [x for x in xs if x >=0 and x <= grid[0]]
         ys = [l[1] for l in cache_objs]
+#        ys = [y for y in ys if y >= 0 and y <= grid[1]]
         plt.scatter(xs, ys, marker='+', label="cache")
         
         obj_cata = obj_means
