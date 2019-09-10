@@ -79,36 +79,35 @@ class Cache:
 
 
     def extraPoints(self, v, delete=False):
-        if v[0] < float(self.grid[0]/2):
-            if v[1] < float(self.grid[1]/2):
+        update = False
+        if v[0] < float(self.grid[0]/2) and v[0] > 0:
+            if v[1] < float(self.grid[1]/2) and v[1] > 0:
                 first_point = np.array([v[0] + self.grid[0], v[1]])
                 second_point = np.array([v[0], v[1] + self.grid[1]])
                 third_point = np.array([v[0] + self.grid[0], v[1] + self.grid[1]])
+                update = True
             else:
-                first_point = np.array([v[0] + self.grid[0], v[1]])
-                second_point = np.array([v[0], v[1] - self.grid[1]])
-                third_point = np.array([v[0] + self.grid[0], v[1] - self.grid[1]])
-                self.lsh.index(first_point)
-                self.lsh.index(second_point)
-                self.lsh.index(third_point)
-                                    
+                if v[1] > float(self.grid[1]/2)  and v[1] < self.grid[1]:
+                    first_point = np.array([v[0] + self.grid[0], v[1]])
+                    second_point = np.array([v[0], v[1] - self.grid[1]])
+                    third_point = np.array([v[0] + self.grid[0], v[1] - self.grid[1]])
+                    update = True
         else :
-            if v[0] >= float(self.grid[0]/2):
-                if v[1] < float(self.grid[1]/2):
+            if v[0] > float(self.grid[0]/2) and v[0] < self.grid[0]:
+                if v[1] < float(self.grid[1]/2) and v[1] > 0:
                     first_point = np.array([v[0] - self.grid[0], v[1]])
                     second_point = np.array([v[0] , v[1] + self.grid[1]])
                     third_point = np.array([v[0] - self.grid[0], v[1] - self.grid[1]])
-                    self.lsh.index(first_point)
-                    self.lsh.index(second_point)
-                    self.lsh.index(third_point)                            
+                    update = True
                 else:
-                    first_point = np.array([v[0] - self.grid[0], v[1]])
-                    second_point = np.array([v[0], v[1] - self.grid[1]])
-                    third_point = np.array([v[0] - self.grid[0], v[1] - self.grid[1]])
-                    self.lsh.index(first_point)
-                    self.lsh.index(second_point)
-                    self.lsh.index(third_point)
-                                                                                  
+                    if v[1] > float(self.grid [1]/2) and v[1]  < self.grid[1]:
+                        first_point = np.array([v[0] - self.grid[0], v[1]])
+                        second_point = np.array([v[0], v[1] - self.grid[1]])
+                        third_point = np.array([v[0] - self.grid[0], v[1] - self.grid[1]])
+                        update = True
+
+        if update == False:
+            return 
         if delete == False:
             self.lsh.index(first_point)
             self.lsh.index(second_point)
@@ -116,11 +115,11 @@ class Cache:
         else:
             self.lsh.delete_vector(first_point)
             self.lsh.delete_vector(second_point)
-            self.lsh.delete_vector(third_point)            
-                    
+            self.lsh.delete_vector(third_point)                        
 
+            
     def checkIfInGrid(self, v):
-        if v[0] >= 0 and v[0] <= self.grid[0] and v[1] >= 0 and v[1] <= self.grid[1]:
+        if v[0] > 0 and v[0] < self.grid[0] and v[1] > 0 and v[1] < self.grid[1]:
             return True
         else:
             return False
@@ -147,7 +146,7 @@ class Cache:
 
     
     def initializeLSH(self, dim):        
-        self.lsh = LSHash(3, dim, 10)
+        self.lsh = LSHash(10, dim, 8)
         for index in range(self.capacity):
             v = self.cache[index]
             if self.integral == False:
@@ -157,17 +156,22 @@ class Cache:
                 self.extraPoints(v)
                 
     def updateCache(self, src_obj_pos, dst_obj):
+        ## Delete the point
         if self.checkIfInGrid(src_obj_pos) == True:
             self.lsh.delete_vector(src_obj_pos)
+            self.extraPoints(src_obj_pos, True)
         else :
             v = self.findOriginalPoint(src_obj_pos)
             self.lsh.delete_vector(v)
             self.extraPoints(v, True)
-            
+
+        ## Add the new point            
         if self.checkIfInGrid(dst_obj.pos) == True:
             self.lsh.index(dst_obj.pos)
+            self.extraPoints(dst_obj.pos)
         else:
             v = self.findOriginalPoint(dst_obj.pos)
+            self.lsh.index(v)
             self.extraPoints(v)
 
     
@@ -175,7 +179,6 @@ class Cache:
         self.updateCache(src_obj_pos, dst_obj)
 
     def findNearest(self, vec):
-        ## Loop through the cache and find the nearest
         nearest_point = []
         min_dst = 10000
         min_id = 0
@@ -193,7 +196,7 @@ class Cache:
         K = self.lsh.query(vec)
         nearest_point = K[0][0]
         min_dst = K[0][1]
-        return nearest_point
+        return [nearest_point, min_dst]
 
 
 """ Object Catalogue """
@@ -342,12 +345,12 @@ class Plots:
     def __init__(self):
         pass
 
-    def plot(self, time_series):
+    def plot(self, time_series, grid_d, learning_rate):
         plt.plot(time_series)
         plt.ylabel("Objective")
         plt.xlabel("iterations")
         plt.grid()
-        plt.savefig("objective.png")
+        plt.savefig(str(grid_d) + "_" + str(learning_rate) + "/objective.png")
         plt.clf()
 
     def plot_cache_pos(self, cache, obj_means, cache_init):
@@ -377,7 +380,7 @@ class Plots:
         else:
             return False
 
-    def plot_cache_pos_grid(self, cache, obj_means, cache_init, count, grid):
+    def plot_cache_pos_grid(self, cache, obj_means, cache_init, count, grid, learning_rate):
         cache_objs = cache
         cache_objs = [v for v in cache_objs if self.checkIfInGrid(v, grid) == True]
         xs = [l[0] for l in cache_objs]
@@ -397,7 +400,7 @@ class Plots:
         #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.savefig("cache_pos" + str(count) + ".png")
+        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "/cache_pos" + str(count) + ".png")
         plt.clf()
         
         

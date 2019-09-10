@@ -83,8 +83,9 @@ class InMemoryStorage(BaseStorage):
 
     def remove(self, key, vec):
         vec = (vec[0], vec[1])
-        self.storage[key] = [x for x in self.storage[key] if x != vec]
-
+        if key in self.storage:
+            self.storage[key] = [x for x in self.storage[key] if x != vec]
+            
 
 class RedisStorage(BaseStorage):
     def __init__(self, config):

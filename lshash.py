@@ -116,7 +116,7 @@ class LSHash(object):
         """ Generate uniformly distributed hyperplanes and return it as a 2D
         numpy array.
         """
-
+        
         return np.random.randn(self.hash_size, self.input_dim)
 
     def _hash(self, planes, input_point):
