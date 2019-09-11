@@ -5,6 +5,8 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import math
 from lshash import *
+from decimal import *
+getcontext().prec = 2
 
 # new random covar
 def new_random_cov(n):
@@ -80,35 +82,37 @@ class Cache:
 
     def extraPoints(self, v, delete=False):
         update = False
-        if v[0] < float(self.grid[0]/2) and v[0] > 0:
-            if v[1] < float(self.grid[1]/2) and v[1] > 0:
-                first_point = np.array([v[0] + self.grid[0], v[1]])
-                second_point = np.array([v[0], v[1] + self.grid[1]])
-                third_point = np.array([v[0] + self.grid[0], v[1] + self.grid[1]])
+        if v[0] <= float(self.grid[0]/2) and v[0] >= 0:
+            if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
+                first_point = np.array([round(v[0] + self.grid[0], 2), round(v[1],2)])
+                second_point = np.array([round(v[0], 2), round(v[1] + self.grid[1],2)])
+                third_point = np.array([round(v[0] + self.grid[0],2), round(v[1] + self.grid[1],2)])
                 update = True
             else:
-                if v[1] > float(self.grid[1]/2)  and v[1] < self.grid[1]:
-                    first_point = np.array([v[0] + self.grid[0], v[1]])
-                    second_point = np.array([v[0], v[1] - self.grid[1]])
-                    third_point = np.array([v[0] + self.grid[0], v[1] - self.grid[1]])
+                if v[1] > float(self.grid[1]/2)  and v[1] <= self.grid[1]:
+                    first_point = np.array([round(v[0] + self.grid[0],2), round(v[1],2)])
+                    second_point = np.array([round(v[0],2), round(v[1] - self.grid[1],2)])
+                    third_point = np.array([round(v[0] + self.grid[0],2), round(v[1] - self.grid[1],2)])
                     update = True
         else :
-            if v[0] > float(self.grid[0]/2) and v[0] < self.grid[0]:
-                if v[1] < float(self.grid[1]/2) and v[1] > 0:
-                    first_point = np.array([v[0] - self.grid[0], v[1]])
-                    second_point = np.array([v[0] , v[1] + self.grid[1]])
-                    third_point = np.array([v[0] - self.grid[0], v[1] - self.grid[1]])
+            if v[0] > float(self.grid[0]/2) and v[0] <= self.grid[0]:
+                if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
+                    first_point = np.array([round(v[0] - self.grid[0],2), round(v[1],2)])
+                    second_point = np.array([round(v[0],2) , round(v[1] + self.grid[1],2)])
+                    third_point = np.array([round(v[0] - self.grid[0],2), round(v[1] + self.grid[1],2)])
                     update = True
                 else:
-                    if v[1] > float(self.grid [1]/2) and v[1]  < self.grid[1]:
-                        first_point = np.array([v[0] - self.grid[0], v[1]])
-                        second_point = np.array([v[0], v[1] - self.grid[1]])
-                        third_point = np.array([v[0] - self.grid[0], v[1] - self.grid[1]])
+                    if v[1] > float(self.grid [1]/2) and v[1]  <= self.grid[1]:
+                        first_point = np.array([round(v[0] - self.grid[0],2), round(v[1],2)])
+                        second_point = np.array([round(v[0],2), round(v[1] - self.grid[1],2)])
+                        third_point = np.array([round(v[0] - self.grid[0],2), round(v[1] - self.grid[1],2)])
                         update = True
+
+        
 
         if update == False:
             return 
-        if delete == False:
+        elif delete == False:
             self.lsh.index(first_point)
             self.lsh.index(second_point)
             self.lsh.index(third_point)
@@ -119,7 +123,7 @@ class Cache:
 
             
     def checkIfInGrid(self, v):
-        if v[0] > 0 and v[0] < self.grid[0] and v[1] > 0 and v[1] < self.grid[1]:
+        if v[0] >= 0 and v[0] <= self.grid[0] and v[1] >= 0 and v[1] <= self.grid[1]:
             return True
         else:
             return False
@@ -128,25 +132,25 @@ class Cache:
         x = 0
         y = 0
 
-        if v[0] > self.grid[0]:
-            x = v[0] - self.grid[0]
-        elif v[0] < 0:
-            x = v[0] + self.grid[0]
+        if v[0] >= self.grid[0]:
+            x = round(v[0] - self.grid[0],2)
+        elif v[0] <= 0:
+            x = round(v[0] + self.grid[0],2)
         else :
-            x = v[0]
+            x = round(v[0],2)
 
-        if v[1] > self.grid[1]:
-            y = v[1] - self.grid[1]
-        elif v[1] < 0:
-            y = v[1] + self.grid[1]
+        if v[1] >= self.grid[1]:
+            y = round(v[1] - self.grid[1],2)
+        elif v[1] <= 0:
+            y = round(v[1] + self.grid[1],2)
         else :
-            y = v[1]
+            y = round(v[1],2)
 
         return np.array([x,y])
 
     
     def initializeLSH(self, dim):        
-        self.lsh = LSHash(10, dim, 8)
+        self.lsh = LSHash(8, dim, 8)
         for index in range(self.capacity):
             v = self.cache[index]
             if self.integral == False:
@@ -337,6 +341,7 @@ class StochasticGradientDescent:
 
         d = derivative_l1(nearest_object, current_object)
         n = nearest_object - self.alpha * d
+        n = [round(x,2) for x in n]
         return n
 
 

@@ -211,7 +211,7 @@ class LSHash(object):
         for i, table in enumerate(self.hash_tables):
             for key in table.keys():
                 all_points.extend(table.get_list(key))
-            return all_points
+            return list(set(all_points))
 
     def delete_vector(self, vec):
         for i, table in enumerate(self.hash_tables):
@@ -277,6 +277,7 @@ class LSHash(object):
         # rank candidates by distance function
         candidates = [(ix, d_func(query_point, self._as_np_array(ix)))
                       for ix in candidates]
+
         candidates.sort(key=lambda x: x[1])
 
         return candidates[:num_results] if num_results else candidates
