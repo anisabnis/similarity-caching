@@ -2,7 +2,7 @@ from util import *
 import argparse
 import copy
 import os
-
+import time
 
 class Simulator:
     def __init__(self, dim, capacity, no_objects, alpha, iter, update_interval, learning_rate):
@@ -27,14 +27,16 @@ class Simulator:
 
         self.learning_rate = learning_rate
 
-        os.system("mkdir " + str(self.grid_d) + "_" + str(learning_rate))        
+        os.system("mkdir " + str(self.grid_d) + "_" + str(learning_rate) + "_uniform_complete_backup")        
         
 
     def write_stat(self, i, obj, f):
+        print(i, obj)
         f.write(str(i) + "\t" + str(obj))
         f.write("\n")
-
-    objective_value = 1000000
+        f.flush()
+        print(len(self.cache.getAllPoints()))
+        
 
     def simulate(self):
         objective = [] 
@@ -46,14 +48,14 @@ class Simulator:
 
         number_obj = len(self.cache.getAllPoints())
 
-        f = open(str(self.grid_d) + '_' + str(self.learning_rate) +  '/' + str("objective") + '.txt', 'w')
+        f = open(str(self.grid_d) + '_' + str(self.learning_rate) + '_uniform_complete_backup' +  '/' + str("objective") + '.txt', 'w')
         
         for i in range(self.iter):
 
             obj = self.obj_catalogue.getRequest()
             pos = obj.pos
             [nearest_obj, dst] = self.cache.findNearestANN(pos)                        
-            objective_value += dst
+            #objective_value += dst
             
             init_points = self.cache.getAllPoints()
             if i % self.u_interval == 0:
@@ -62,10 +64,13 @@ class Simulator:
                 self.cache.updateCacheDict(nearest_obj, new_object)                
 
             if i - prev_i >= jump_interval:
-                objective_value = self.obj_catalogue.objective_l1(self.cache)
+                print("iter : ", i, time.localtime())
+#                print("begin : ", time.localtime())
+                #objective_value = self.obj_catalogue.objective_l1(self.cache)
                 #running_avg_obj = float(objective_value)/i
-                objective.append(running_avg_obj)
-                self.write_stat(i, running_avg_obj, f)
+                objective.append(objective_value)
+
+                self.write_stat(i, objective_value, f)
 
                 if i < 100000 and i == 10 * jump_interval:
                     jump_interval *= 10
@@ -79,7 +84,7 @@ class Simulator:
                 self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points, count, [self.grid_d, self.grid_d], self.learning_rate)
                 count += 1                
 
-s = Simulator(2, 313, 100, 0.4, 3000000, 1, 0.01)
+s = Simulator(2, 313, 100, 0.4, 100000000, 1, 0.05)
 s.simulate()                
                 
                 

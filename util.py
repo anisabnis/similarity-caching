@@ -54,6 +54,85 @@ class CacheObject:
         self.size = size
 
 
+class objPos:
+    def __init__(self, grid_s):
+        self.cache = defaultdict(lambda : defaultdict(list))
+        self.grid_s = grid_s
+        
+    def insert(self, point):
+        self.cache[int(point[0])][int(point[1])].append(point) 
+
+    def delete(self, point):
+        self.cache[int(point[0])][int(point[1])] = [x for x in self.cache[int(point[0])][int(point[1])] if x != point]
+
+    def get_all_points(self):
+        points = []
+        for a in self.cache:
+            for b in self.cache[a]:
+                points.extend(self.cache[a][b])
+        return points
+                                                    
+        
+""" All attributes and functions of a cache """
+class Cache:
+    def __init__(self, capacity, dim, learning_rate, integral=False, grid_s=[313,313]):
+
+        self.cache = {}
+        self.grid = grid_s
+        self.integral = integral
+
+        for index in range(capacity):
+            if integral == False:
+                v = np.random.rand(dim)
+                self.cache[index] = v
+            else:
+                ii = np.random.randint(0, grid_s[0])
+                jj = np.random.randint(0, grid_s[1])
+                self.cache[index] = np.array([ii,jj])
+
+        self.alpha = learning_rate
+        self.capacity = capacity
+        self.initializeIterativeSearch()
+
+    def getAllPoints(self):
+        return self.obj_pos.get_all_points()
+    
+    def initializeIterativeSearch(self, dim):
+        self.obj_pos = objPos(self.grid)
+        for index in range(self.capacity):
+            self.obj_pos.append(self.capacity[index])
+            
+                            
+    def updateCache(self, src_obj_pos, dst_obj):
+        self.obj_pos.delete(src_obj_pos)
+        self.obj_pos.insert(dst_obj)
+
+        
+    def updateCacheDict(self, src_obj_pos, dst_obj):
+        self.updateCache(src_obj_pos, dst_obj)
+
+    def findNearest(self, vec):
+        i = 0
+        min_dist = 10000
+        min_point = [0,0]
+        found = False
+
+        candidates = []
+        while True:
+            ## top line
+            
+            for x in range(vec[0]-i, vec[0] + i + 1):
+                
+            ## bottom line
+            ## left line
+            ## right
+
+            if first_found_in_iter == False:
+                first_i = i
+                break_i = ceil(first_i * 1.5)
+                first_found_in_iter = True
+
+            
 """ All attributes and functions of a cache """
 class Cache:
     def __init__(self, capacity, dim, learning_rate, integral=False, grid_s=[313,313]):
@@ -84,32 +163,31 @@ class Cache:
         update = False
         if v[0] <= float(self.grid[0]/2) and v[0] >= 0:
             if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
-                first_point = np.array([round(v[0] + self.grid[0], 2), round(v[1],2)])
-                second_point = np.array([round(v[0], 2), round(v[1] + self.grid[1],2)])
-                third_point = np.array([round(v[0] + self.grid[0],2), round(v[1] + self.grid[1],2)])
+                first_point = np.array([round(v[0] + self.grid[0], 3), round(v[1],3)])
+                second_point = np.array([round(v[0], 3), round(v[1] + self.grid[1],3)])
+                third_point = np.array([round(v[0] + self.grid[0],3), round(v[1] + self.grid[1],3)])
                 update = True
             else:
                 if v[1] > float(self.grid[1]/2)  and v[1] <= self.grid[1]:
-                    first_point = np.array([round(v[0] + self.grid[0],2), round(v[1],2)])
-                    second_point = np.array([round(v[0],2), round(v[1] - self.grid[1],2)])
-                    third_point = np.array([round(v[0] + self.grid[0],2), round(v[1] - self.grid[1],2)])
+                    first_point = np.array([round(v[0] + self.grid[0],3), round(v[1],3)])
+                    second_point = np.array([round(v[0],3), round(v[1] - self.grid[1],3)])
+                    third_point = np.array([round(v[0] + self.grid[0],3), round(v[1] - self.grid[1],3)])
                     update = True
         else :
             if v[0] > float(self.grid[0]/2) and v[0] <= self.grid[0]:
                 if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
-                    first_point = np.array([round(v[0] - self.grid[0],2), round(v[1],2)])
-                    second_point = np.array([round(v[0],2) , round(v[1] + self.grid[1],2)])
-                    third_point = np.array([round(v[0] - self.grid[0],2), round(v[1] + self.grid[1],2)])
+                    first_point = np.array([round(v[0] - self.grid[0],3), round(v[1],3)])
+                    second_point = np.array([round(v[0],3) , round(v[1] + self.grid[1],3)])
+                    third_point = np.array([round(v[0] - self.grid[0],3), round(v[1] + self.grid[1],3)])
                     update = True
                 else:
                     if v[1] > float(self.grid [1]/2) and v[1]  <= self.grid[1]:
-                        first_point = np.array([round(v[0] - self.grid[0],2), round(v[1],2)])
-                        second_point = np.array([round(v[0],2), round(v[1] - self.grid[1],2)])
-                        third_point = np.array([round(v[0] - self.grid[0],2), round(v[1] - self.grid[1],2)])
+                        first_point = np.array([round(v[0] - self.grid[0],3), round(v[1],3)])
+                        second_point = np.array([round(v[0],3), round(v[1] - self.grid[1],3)])
+                        third_point = np.array([round(v[0] - self.grid[0],3), round(v[1] - self.grid[1],3)])
                         update = True
 
         
-
         if update == False:
             return 
         elif delete == False:
@@ -133,24 +211,24 @@ class Cache:
         y = 0
 
         if v[0] >= self.grid[0]:
-            x = round(v[0] - self.grid[0],2)
+            x = round(v[0] - self.grid[0],3)
         elif v[0] <= 0:
-            x = round(v[0] + self.grid[0],2)
+            x = round(v[0] + self.grid[0],3)
         else :
-            x = round(v[0],2)
+            x = round(v[0],3)
 
         if v[1] >= self.grid[1]:
-            y = round(v[1] - self.grid[1],2)
+            y = round(v[1] - self.grid[1],3)
         elif v[1] <= 0:
-            y = round(v[1] + self.grid[1],2)
+            y = round(v[1] + self.grid[1],3)
         else :
-            y = round(v[1],2)
+            y = round(v[1],3)
 
         return np.array([x,y])
 
     
     def initializeLSH(self, dim):        
-        self.lsh = LSHash(8, dim, 8)
+        self.lsh = LSHash(4, dim, 6)
         for index in range(self.capacity):
             v = self.cache[index]
             if self.integral == False:
@@ -198,8 +276,8 @@ class Cache:
 
     def findNearestANN(self, vec):
         K = self.lsh.query(vec)
-        nearest_point = K[0][0]
-        min_dst = K[0][1]
+        nearest_point = K[0]
+        min_dst = K[1]
         return [nearest_point, min_dst]
 
 
@@ -275,21 +353,61 @@ class ObjectCatalogueGrid:
         return obj
 
 
+    def objective_l1_lsh(self, cache):
+        obj = 0
+        for c_obj in self.catalogue:
+            K = cache.lsh.query(c_obj.pos)
+            obj += K[1]            
+        return obj
+
+    def objective_l1_iterative(self, cache):
+        pass
+
+
+class ObjectCatalogueGrid2:
+    def __init__(self, dim_x, dim_y):
+        self.catalogue = []
+        self.dim_x = dim_x
+        self.dim_y = dim_y
+        self.means = []
+        self.obj_id = 0
+
+        for i in range(dim_x):
+            for j in range(dim_y):
+
+                pos = np.array([i,j])
+                c_obj = CacheObject(self.obj_id, pos)                
+                self.catalogue.append(c_obj)
+                self.means.append(pos)
+                self.obj_id += 1
+                
+    def getRequest(self):
+        index = np.random.randint(0, self.obj_id)
+        obj = self.catalogue[index]
+        return obj
+        
+
+    def objective(self, cache):
+        obj = 0
+        for c_obj in self.catalogue:
+            min_dst = 100000
+            for c in cache:
+                if np.linalg.norm(c_obj.pos - c) < min_dst:
+                    min_dst =  np.linalg.norm(c_obj.pos - c)
+            obj += min_dst
+        return obj
+
+
     def objective_l1(self, cache):
         obj = 0
         for c_obj in self.catalogue:
             K = cache.lsh.query(c_obj.pos)
-            obj += K[0][1]
-
-            #min_dst = 10000
-            #for c in cache:
-            #    if sum(abs(c_obj.pos - c)) < min_dst:
-            #        min_dst = sum(abs(c_obj.pos - c))
-            #obj += min_dst
-            
+            obj += K[1]            
         return obj
 
-  
+
+
+    
 """ Object Catalogue """
 class ObjectCatalogueGaussian:
     def __init__(self, no_objects, centers, dim):
@@ -341,7 +459,7 @@ class StochasticGradientDescent:
 
         d = derivative_l1(nearest_object, current_object)
         n = nearest_object - self.alpha * d
-        n = [round(x,2) for x in n]
+        n = [round(x,3) for x in n]
         return n
 
 
@@ -405,7 +523,7 @@ class Plots:
         #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "/cache_pos" + str(count) + ".png")
+        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_uniform_complete_backup/cache_pos" + str(count) + ".png")
         plt.clf()
         
         

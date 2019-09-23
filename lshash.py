@@ -10,6 +10,7 @@ import numpy as np
 
 from builtins import str
 from storage import storage
+import operator
 
 try:
     from bitarray import bitarray
@@ -278,9 +279,10 @@ class LSHash(object):
         candidates = [(ix, d_func(query_point, self._as_np_array(ix)))
                       for ix in candidates]
 
-        candidates.sort(key=lambda x: x[1])
+        #candidates.sort(key=lambda x: x[1])
+        best_candidate = min(candidates, key=operator.itemgetter(1))
 
-        return candidates[:num_results] if num_results else candidates
+        return [best_candidate[0], best_candidate[1]]
 
     ### distance functions
 
