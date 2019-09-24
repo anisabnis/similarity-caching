@@ -7,7 +7,7 @@ import math
 from lshash import *
 from decimal import *
 from collections import defaultdict
-
+import multiprocessing
 getcontext().prec = 2
 
 # new random covar
@@ -402,13 +402,43 @@ class ObjectCatalogueGrid:
             obj += K[1]            
         return obj
 
-    def objective_l1_iterative(self, cache):
+    def objective_l1_iterative(self, sub_catalogue, objective_dict, i, cache):
         obj = 0
-        for c_obj in self.catalogue:
+        for c_obj in sub_catalogue:
             K = cache.findNearest(c_obj.pos)
+            print(K)
             obj += K[1]
+        objective_dict[i] = obj
+        return 
+
+    def objective_l1_iterative_threaded(self, cache):
+        manager = multiprocessing.Manager()
+        objective_val = manager.dict()
+        obj = 0
+
+        sequence = list(range(8))
+        sequence.reverse()
+        chunk_size = int(len(self.catalogue)/8)
+
+        jobs = []
+        p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[0]*chunk_size:], objective_val, 8, cache, ))
+        p.start()
+        jobs.append(p)
+        
+        for i in range(1, len(sequence)):
+            p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[i]*chunk_size:sequence[i-1]*chunk_size], objective_val, sequence[i], cache, ))
+            jobs.append(p)
+            p.start()
+
+        for proc in jobs:
+            proc.join()
+
+        for key in objective_val:
+            obj += objective_val[key]
+
         return obj
 
+    
 
 class ObjectCatalogueGrid2:
     def __init__(self, dim_x, dim_y):
@@ -569,7 +599,7 @@ class Plots:
         #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_uniform_complete_backup/cache_pos" + str(count) + ".png")
+        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_grid_search/cache_pos" + str(count) + ".png")
         plt.clf()
         
         
