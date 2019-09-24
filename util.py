@@ -59,13 +59,56 @@ class CacheObject:
 class objPos:
     def __init__(self, grid_s):
         self.cache = defaultdict(lambda : defaultdict(list))
-        self.grid_s = grid_s
+        self.grid = grid_s
+
+    def checkIfInGrid(self, v):
+        if v[0] >= 0 and v[0] <= self.grid[0] and v[1] >= 0 and v[1] <= self.grid[1]:
+            return True
+        else:
+            return False
+
+
+    def findOriginalPoint(self, v):
+        x = 0
+        y = 0
+
+        if v[0] > self.grid[0]:
+            x = round(v[0] - self.grid[0],3)
+        elif v[0] < 0:
+            x = round(v[0] + self.grid[0],3)
+        else :
+            x = round(v[0],3)
+
+        if v[1] > self.grid[1]:
+            y = round(v[1] - self.grid[1],3)
+        elif v[1] < 0:
+            y = round(v[1] + self.grid[1],3)
+        else :
+            y = round(v[1],3)
+
+        return np.array([x,y])
         
     def insert(self, point):
-        self.cache[int(point[0])][int(point[1])].append(point) 
+        if self.checkIfInGrid(point) == True:
+            if point in self.cache[int(point[0])][int(point[1])]:
+                pass
+            else:
+                self.cache[int(point[0])][int(point[1])].append(point) 
+        else :
+            new_point = self.findOriginalPoint(point)
+            if new_point in self.findOriginalPoint(point):
+                pass
+            else :
+                self.cache[int(new_point[0])][int(new_point[1])].append(new_point) 
 
-    def delete(self, point):
-        self.cache[int(point[0])][int(point[1])] = [x for x in self.cache[int(point[0])][int(point[1])] if x[0] != point[0] and x[1] != point[1]]
+    def delete(self, point, mapped):
+        #if self.checkIfInGrid(point) == True:
+        if mapped == False:
+#            print("Deleting point : ", point, self.cache[int(point[0])][int(point[1])])
+            self.cache[int(point[0])][int(point[1])] = [x for x in list(self.cache[int(point[0])][int(point[1])]) if x[0] != point[0] and x[1] != point[1]]
+        else:
+            new_point = self.findOriginalPoint(point)
+            self.cache[int(new_point[0])][int(new_point[1])] = [x for x in list(self.cache[int(new_point[0])][int(new_point[1])]) if x[0] != new_point[0] and x[1] != new_point[1]]
 
     def get_all_points(self):
         points = []
@@ -96,7 +139,6 @@ class CacheGrid:
         self.capacity = capacity
         self.initializeIterativeSearch(self.grid)
 
-
     def getAllPoints(self):
         return self.obj_pos.get_all_points()
     
@@ -105,13 +147,12 @@ class CacheGrid:
         for index in range(self.capacity):
             self.obj_pos.insert(self.cache[index])
                                         
-    def updateCache(self, src_obj_pos, dst_obj):
-        self.obj_pos.delete(src_obj_pos)
+    def updateCache(self, src_obj_pos, dst_obj, mapped):
+        self.obj_pos.delete(src_obj_pos, mapped)
         self.obj_pos.insert(dst_obj)
-
         
-    def updateCacheDict(self, src_obj_pos, dst_obj):
-        self.updateCache(src_obj_pos, dst_obj)
+    def updateCacheDict(self, src_obj_pos, dst_obj, mapped):
+        self.updateCache(src_obj_pos, dst_obj, mapped)
 
     def get_mapped_points(self, v):
         if v[0] <= float(self.grid[0]/2) and v[0] >= 0:
@@ -199,6 +240,9 @@ class CacheGrid:
 
             i += 1
 
+        ## Returns [a, c]
+        ## a = mapped point
+        ## c = distance
         def dist(c, v, break_i):
             min_dst = 10000
             first = np.linalg.norm((c-v), ord=1)
@@ -206,13 +250,16 @@ class CacheGrid:
                 mapped_points = self.get_mapped_points(c)
                 mapped = [(c, np.linalg.norm((c-v), ord=1)) for c in mapped_points]
                 best = min(mapped, key=operator.itemgetter(1))
-                return [best[0], best[1]]
+                if best != c:
+                    return [best[0], best[1], True]
+                else :
+                    return [best[0], best[1], False]
             else:
-                return [c , first]
+                return [c , first, False]
 
         candidates = [dist(c, vec, break_i) for c in candidates]
         best_candidate = min(candidates, key=operator.itemgetter(1))
-        return [best_candidate[0], best_candidate[1]]
+        return [best_candidate[0], best_candidate[1], best_candidate[2]]
 
             
 """ All attributes and functions of a cache """
@@ -558,8 +605,9 @@ class ObjectCatalogueGaussian:
 
 """ DescentMethods """
 class StochasticGradientDescent:
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, grid):
         self.alpha = learning_rate
+        self.grid = grid
 
     def descent(self, nearest_object, current_object):
 
@@ -571,6 +619,7 @@ class StochasticGradientDescent:
 
         d = derivative_l1(nearest_object, current_object)
         n = nearest_object - self.alpha * d
+        n = [x%self.grid for x in n]
         n = [round(x,3) for x in n]
         return n
 

@@ -19,7 +19,7 @@ class Simulator:
 
         self.u_interval = update_interval
 
-        self.descent = StochasticGradientDescent(learning_rate)
+        self.descent = StochasticGradientDescent(learning_rate, self.grid_d)
 
         self.plot =  Plots()
 
@@ -52,17 +52,16 @@ class Simulator:
 
             obj = self.obj_catalogue.getRequest()
             pos = obj.pos
-            [nearest_obj, dst] = self.cache.findNearest(pos)                        
-    
+            [nearest_obj, dst, mapped] = self.cache.findNearest(pos)                        
+
             if i % self.u_interval == 0:
                 new_object_loc = self.descent.descent(nearest_obj, obj.pos)
-                new_object_loc = [x%self.grid_d for x in new_object_loc]
-                self.cache.updateCacheDict(nearest_obj, new_object_loc)                
+                #new_object_loc = [x%self.grid_d for x in new_object_loc]
+                self.cache.updateCacheDict(nearest_obj, new_object_loc, mapped)                
 
             if i - prev_i >= jump_interval:
 
-                print("iter : ", i, time.localtime(), len(self.cache.getAllPoints()))
-                      
+                print("iter : ", i, time.localtime())                      
                 #objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
                 #print("iter : ", i, time.localtime(), objective_value)
                 objective.append(objective_value)
