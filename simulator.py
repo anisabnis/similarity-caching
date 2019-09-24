@@ -27,7 +27,7 @@ class Simulator:
 
         self.learning_rate = learning_rate
 
-        os.system("mkdir " + str(self.grid_d) + "_" + str(learning_rate) + "_grid_search")        
+        os.system("mkdir " + str(self.grid_d) + "_" + str(learning_rate) + "_latest")        
         
 
     def write_stat(self, i, obj, f):
@@ -46,7 +46,7 @@ class Simulator:
 
         number_obj = len(self.cache.getAllPoints())
 
-        f = open(str(self.grid_d) + '_' + str(self.learning_rate) + '_grid_search' +  '/' + str("objective") + '.txt', 'w')                
+        f = open(str(self.grid_d) + '_' + str(self.learning_rate) + '_latest' +  '/' + str("objective") + '.txt', 'w')                
                
         for i in range(self.iter):
 
@@ -61,10 +61,10 @@ class Simulator:
 
             if i - prev_i >= jump_interval:
 
-                print("iter : ", i, time.localtime())
+                print("iter : ", i, time.localtime(), len(self.cache.getAllPoints()))
+                      
                 #objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
-                print("iter : ", i, time.localtime(), objective_value)
-
+                #print("iter : ", i, time.localtime(), objective_value)
                 objective.append(objective_value)
 
                 self.write_stat(i, objective_value, f)

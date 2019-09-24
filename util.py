@@ -155,34 +155,44 @@ class CacheGrid:
             y1 = (int(vec[1])-i)%self.grid[1]
             y2 = (int(vec[1])+i)%self.grid[1]
 
+            a = i
             for x in range(int(vec[0])-i, int(vec[0]) + i + 1):
                 x = x%self.grid[0]
-
-                candidates.extend(self.obj_pos.cache[x][y1])
-                candidates.extend(self.obj_pos.cache[x][y2])
-
-                if len(self.obj_pos.cache[x][y1]) > 0:
-                    if found == False:
-                        found = True
                 
-                if len(self.obj_pos.cache[x][y2]) > 0:
-                    if found == False:
-                        found = True    
-
+                if first == True or (first == False and abs(a) + i <= break_i):
+               
+                    candidates.extend(self.obj_pos.cache[x][y1])
+                    candidates.extend(self.obj_pos.cache[x][y2])
+                   
+                    if first == True:
+                        if len(self.obj_pos.cache[x][y1]) > 0:
+                            if found == False:
+                                found = True
+                       
+                        if len(self.obj_pos.cache[x][y2]) > 0:
+                            if found == False:
+                                found = True
+                a=a-1
+                        
+            a = i
             for y in range(int(vec[1])-i, int(vec[1]) + i + 1):
                 y = y%self.grid[1]
+                
+                if first == True or (first == False and abs(a) + i <= break_i):
+                    candidates.extend(self.obj_pos.cache[x1][y])
+                    candidates.extend(self.obj_pos.cache[x2][y])            
 
-                candidates.extend(self.obj_pos.cache[x1][y])
-                candidates.extend(self.obj_pos.cache[x2][y])            
+                    if first == True:
+                        if len(self.obj_pos.cache[x1][y]) > 0:
+                            if found == False:
+                                found = True
+                            
+                        if len(self.obj_pos.cache[x2][y]) > 0:
+                            if found == False:
+                                found = True                    
 
-                if len(self.obj_pos.cache[x1][y]) > 0:
-                    if found == False:
-                        found = True
-
-                if len(self.obj_pos.cache[x2][y]) > 0:
-                    if found == False:
-                        found = True                    
-
+                a=a-1
+                
             if found == True and first == True:
                 break_i = math.ceil(i * 2)
                 first = False
@@ -625,7 +635,7 @@ class Plots:
         #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_grid_search/cache_pos" + str(count) + ".png")
+        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_latest/cache_pos" + str(count) + ".png")
         plt.clf()
         
         
