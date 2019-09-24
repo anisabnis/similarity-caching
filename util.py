@@ -113,6 +113,31 @@ class CacheGrid:
     def updateCacheDict(self, src_obj_pos, dst_obj):
         self.updateCache(src_obj_pos, dst_obj)
 
+    def get_mapped_points(self, v):
+        if v[0] <= float(self.grid[0]/2) and v[0] >= 0:
+            if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
+                first_point = np.array([round(v[0] + self.grid[0], 3), round(v[1],3)])
+                second_point = np.array([round(v[0], 3), round(v[1] + self.grid[1],3)])
+                third_point = np.array([round(v[0] + self.grid[0],3), round(v[1] + self.grid[1],3)])
+            else:
+                if v[1] > float(self.grid[1]/2)  and v[1] <= self.grid[1]:
+                    first_point = np.array([round(v[0] + self.grid[0],3), round(v[1],3)])
+                    second_point = np.array([round(v[0],3), round(v[1] - self.grid[1],3)])
+                    third_point = np.array([round(v[0] + self.grid[0],3), round(v[1] - self.grid[1],3)])
+        else :
+            if v[0] > float(self.grid[0]/2) and v[0] <= self.grid[0]:
+                if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
+                    first_point = np.array([round(v[0] - self.grid[0],3), round(v[1],3)])
+                    second_point = np.array([round(v[0],3) , round(v[1] + self.grid[1],3)])
+                    third_point = np.array([round(v[0] - self.grid[0],3), round(v[1] + self.grid[1],3)])
+                else:
+                    if v[1] > float(self.grid [1]/2) and v[1]  <= self.grid[1]:
+                        first_point = np.array([round(v[0] - self.grid[0],3), round(v[1],3)])
+                        second_point = np.array([round(v[0],3), round(v[1] - self.grid[1],3)])
+                        third_point = np.array([round(v[0] - self.grid[0],3), round(v[1] - self.grid[1],3)])
+
+        return [v, first_point, second_point, third_point]
+
     def findNearest(self, vec):
         i = 0
         min_dist = 10000
@@ -129,7 +154,6 @@ class CacheGrid:
 
             y1 = (int(vec[1])-i)%self.grid[1]
             y2 = (int(vec[1])+i)%self.grid[1]
-
 
             for x in range(int(vec[0])-i, int(vec[0]) + i + 1):
                 x = x%self.grid[0]
@@ -160,18 +184,24 @@ class CacheGrid:
                         found = True                    
 
             if found == True and first == True:
-                break_i = math.ceil(i * 1.5)
+                break_i = math.ceil(i * 2)
                 first = False
 
             i += 1
 
-        def dist(c,v):
-            return np.linalg.norm((c - v), ord=1)
+        def dist(c, v, break_i):
+            min_dst = 10000
+            first = np.linalg.norm((c-v), ord=1)
+            if first > 4 * break_i:
+                mapped_points = self.get_mapped_points(c)
+                mapped = [(c, np.linalg.norm((c-v), ord=1)) for c in mapped_points]
+                best = min(mapped, key=operator.itemgetter(1))
+                return [best[0], best[1]]
+            else:
+                return [c , first]
 
-        candidates = [(c, dist(c, vec)) for c in candidates]
-
+        candidates = [dist(c, vec, break_i) for c in candidates]
         best_candidate = min(candidates, key=operator.itemgetter(1))
-
         return [best_candidate[0], best_candidate[1]]
 
             
@@ -349,7 +379,6 @@ class ObjectCatalogueUniform:
             for c in cache:
                 if np.linalg.norm(c_obj.pos - cache[c]) < min_dst:
                     min_dst =  np.linalg.norm(c_obj.pos - cache[c])
-
             obj += min_dst
         return obj
     
@@ -406,7 +435,6 @@ class ObjectCatalogueGrid:
         obj = 0
         for c_obj in sub_catalogue:
             K = cache.findNearest(c_obj.pos)
-            print(K)
             obj += K[1]
         objective_dict[i] = obj
         return 
@@ -432,10 +460,8 @@ class ObjectCatalogueGrid:
 
         for proc in jobs:
             proc.join()
-
-        for key in objective_val:
-            obj += objective_val[key]
-
+            
+        obj = sum(objective_val.values())
         return obj
 
     

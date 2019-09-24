@@ -53,21 +53,18 @@ class Simulator:
             obj = self.obj_catalogue.getRequest()
             pos = obj.pos
             [nearest_obj, dst] = self.cache.findNearest(pos)                        
-            #objective_value += dst
     
             if i % self.u_interval == 0:
                 new_object_loc = self.descent.descent(nearest_obj, obj.pos)
-                #new_object = CacheObject(0, new_object_loc, 0)
+                new_object_loc = [x%self.grid_d for x in new_object_loc]
                 self.cache.updateCacheDict(nearest_obj, new_object_loc)                
 
             if i - prev_i >= jump_interval:
-                print("begin : ", i, " ", time.localtime())
 
-                objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
+                print("iter : ", i, time.localtime())
+                #objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
+                print("iter : ", i, time.localtime(), objective_value)
 
-                
-                print("end : ", time.localtime(), objective_value)
-                
                 objective.append(objective_value)
 
                 self.write_stat(i, objective_value, f)
@@ -84,9 +81,11 @@ class Simulator:
                 self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points, count, [self.grid_d, self.grid_d], self.learning_rate)
                 count += 1                
 
-s = Simulator(2, 313, 100, 0.4, 100000000, 1, 0.001)
+s = Simulator(2, 313, 100, 0.4, 100000000, 1, 0.01)
 s.simulate()                
-                
+
+
+
                 
 
 
