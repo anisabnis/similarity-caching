@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import math
 from lshash import *
 from decimal import *
+from collections import defaultdict
+
 getcontext().prec = 2
 
 # new random covar
@@ -63,7 +65,7 @@ class objPos:
         self.cache[int(point[0])][int(point[1])].append(point) 
 
     def delete(self, point):
-        self.cache[int(point[0])][int(point[1])] = [x for x in self.cache[int(point[0])][int(point[1])] if x != point]
+        self.cache[int(point[0])][int(point[1])] = [x for x in self.cache[int(point[0])][int(point[1])] if x[0] != point[0] and x[1] != point[1]]
 
     def get_all_points(self):
         points = []
@@ -74,7 +76,7 @@ class objPos:
                                                     
         
 """ All attributes and functions of a cache """
-class Cache:
+class CacheGrid:
     def __init__(self, capacity, dim, learning_rate, integral=False, grid_s=[313,313]):
 
         self.cache = {}
@@ -92,7 +94,8 @@ class Cache:
 
         self.alpha = learning_rate
         self.capacity = capacity
-        self.initializeIterativeSearch()
+        self.initializeIterativeSearch(self.grid)
+
 
     def getAllPoints(self):
         return self.obj_pos.get_all_points()
@@ -100,9 +103,8 @@ class Cache:
     def initializeIterativeSearch(self, dim):
         self.obj_pos = objPos(self.grid)
         for index in range(self.capacity):
-            self.obj_pos.append(self.capacity[index])
-            
-                            
+            self.obj_pos.insert(self.cache[index])
+                                        
     def updateCache(self, src_obj_pos, dst_obj):
         self.obj_pos.delete(src_obj_pos)
         self.obj_pos.insert(dst_obj)
@@ -116,21 +118,61 @@ class Cache:
         min_dist = 10000
         min_point = [0,0]
         found = False
+        candidates = []        
+        break_i = self.grid[0]
+        first = True
 
-        candidates = []
-        while True:
-            ## top line
-            
-            for x in range(vec[0]-i, vec[0] + i + 1):
+        while i <= break_i:
+
+            x1 = (int(vec[0])-i)%self.grid[0]
+            x2 = (int(vec[0])+i)%self.grid[0]
+
+            y1 = (int(vec[1])-i)%self.grid[1]
+            y2 = (int(vec[1])+i)%self.grid[1]
+
+
+            for x in range(int(vec[0])-i, int(vec[0]) + i + 1):
+                x = x%self.grid[0]
+
+                candidates.extend(self.obj_pos.cache[x][y1])
+                candidates.extend(self.obj_pos.cache[x][y2])
+
+                if len(self.obj_pos.cache[x][y1]) > 0:
+                    if found == False:
+                        found = True
                 
-            ## bottom line
-            ## left line
-            ## right
+                if len(self.obj_pos.cache[x][y2]) > 0:
+                    if found == False:
+                        found = True    
 
-            if first_found_in_iter == False:
-                first_i = i
-                break_i = ceil(first_i * 1.5)
-                first_found_in_iter = True
+            for y in range(int(vec[1])-i, int(vec[1]) + i + 1):
+                y = y%self.grid[1]
+
+                candidates.extend(self.obj_pos.cache[x1][y])
+                candidates.extend(self.obj_pos.cache[x2][y])            
+
+                if len(self.obj_pos.cache[x1][y]) > 0:
+                    if found == False:
+                        found = True
+
+                if len(self.obj_pos.cache[x2][y]) > 0:
+                    if found == False:
+                        found = True                    
+
+            if found == True and first == True:
+                break_i = math.ceil(i * 1.5)
+                first = False
+
+            i += 1
+
+        def dist(c,v):
+            return np.linalg.norm((c - v), ord=1)
+
+        candidates = [(c, dist(c, vec)) for c in candidates]
+
+        best_candidate = min(candidates, key=operator.itemgetter(1))
+
+        return [best_candidate[0], best_candidate[1]]
 
             
 """ All attributes and functions of a cache """
@@ -361,7 +403,11 @@ class ObjectCatalogueGrid:
         return obj
 
     def objective_l1_iterative(self, cache):
-        pass
+        obj = 0
+        for c_obj in self.catalogue:
+            K = cache.findNearest(c_obj.pos)
+            obj += K[1]
+        return obj
 
 
 class ObjectCatalogueGrid2:

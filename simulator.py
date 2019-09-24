@@ -13,7 +13,7 @@ class Simulator:
 
         self.obj_catalogue = ObjectCatalogueGrid(self.grid_d, self.grid_d)        
 
-        self.cache = Cache(capacity, dim, learning_rate, True, [self.grid_d, self.grid_d])
+        self.cache = CacheGrid(capacity, dim, learning_rate, True, [self.grid_d, self.grid_d])
  
         self.iter = iter
 
@@ -31,12 +31,10 @@ class Simulator:
         
 
     def write_stat(self, i, obj, f):
-        print(i, obj)
         f.write(str(i) + "\t" + str(obj))
         f.write("\n")
         f.flush()
-        print(len(self.cache.getAllPoints()))
-        
+                
 
     def simulate(self):
         objective = [] 
@@ -54,20 +52,19 @@ class Simulator:
 
             obj = self.obj_catalogue.getRequest()
             pos = obj.pos
-            [nearest_obj, dst] = self.cache.findNearestANN(pos)                        
+            [nearest_obj, dst] = self.cache.findNearest(pos)                        
             #objective_value += dst
-            
-            init_points = self.cache.getAllPoints()
+    
             if i % self.u_interval == 0:
                 new_object_loc = self.descent.descent(nearest_obj, obj.pos)
-                new_object = CacheObject(0, new_object_loc, 0)
-                self.cache.updateCacheDict(nearest_obj, new_object)                
+                #new_object = CacheObject(0, new_object_loc, 0)
+                self.cache.updateCacheDict(nearest_obj, new_object_loc)                
 
             if i - prev_i >= jump_interval:
                 print("iter : ", i, time.localtime())
-#                print("begin : ", time.localtime())
-                #objective_value = self.obj_catalogue.objective_l1(self.cache)
-                #running_avg_obj = float(objective_value)/i
+                print("begin : ", time.localtime())
+                objective_value = self.obj_catalogue.objective_l1_iterative(self.cache)
+                print("end : ", time.localtime())
                 objective.append(objective_value)
 
                 self.write_stat(i, objective_value, f)
