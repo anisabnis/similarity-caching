@@ -89,22 +89,19 @@ class objPos:
         return np.array([x,y])
         
     def insert(self, point):
-        print("inserting point : ", point)
         if self.checkIfInGrid(point) == True:
-            if point in self.cache[int(point[0])][int(point[1])]:
+            if len(self.cache[int(point[0])][int(point[1])]) > 0 and point in self.cache[int(point[0])][int(point[1])]:
                 pass
             else:
                 self.cache[int(point[0])][int(point[1])].append(point) 
         else :
             new_point = self.findOriginalPoint(point)
-            if new_point in self.cache[int(new_point[0])][int(new_point[1])]:
+            if len(self.cache[int(new_point[0])][int(new_point[1])]) > 0 and new_point in self.cache[int(new_point[0])][int(new_point[1])]:
                 pass
             else :
                 self.cache[int(new_point[0])][int(new_point[1])].append(new_point) 
 
     def delete(self, point, mapped):
-        #if self.checkIfInGrid(point) == True:
-        print("deleting point : ", point, mapped)
         if mapped == False:
             self.cache[int(point[0])][int(point[1])] = [x for x in list(self.cache[int(point[0])][int(point[1])]) if x[0] != point[0] and x[1] != point[1]]
         else:
