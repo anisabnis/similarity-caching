@@ -59,9 +59,10 @@ class Simulator:
                 #new_object_loc = [x%self.grid_d for x in new_object_loc]
                 self.cache.updateCacheDict(nearest_obj, new_object_loc, mapped)                
 
+            print("iter : ", i, time.localtime(), len(self.cache.getAllPoints()), obj.pos)
+
             if i - prev_i >= jump_interval:
 
-                print("iter : ", i, time.localtime(), len(self.cache.getAllPoints()))
                 #objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
                 #print("iter : ", i, time.localtime(), objective_value)
 

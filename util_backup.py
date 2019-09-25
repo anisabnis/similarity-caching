@@ -4,7 +4,7 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 import math
-import operator
+from lshash import *
 from decimal import *
 from collections import defaultdict
 import multiprocessing
@@ -72,16 +72,16 @@ class objPos:
         x = 0
         y = 0
 
-        if v[0] >= self.grid[0]:
+        if v[0] > self.grid[0]:
             x = round(v[0] - self.grid[0],3)
-        elif v[0] <= 0:
+        elif v[0] < 0:
             x = round(v[0] + self.grid[0],3)
         else :
             x = round(v[0],3)
 
-        if v[1] >= self.grid[1]:
+        if v[1] > self.grid[1]:
             y = round(v[1] - self.grid[1],3)
-        elif v[1] <= 0:
+        elif v[1] < 0:
             y = round(v[1] + self.grid[1],3)
         else :
             y = round(v[1],3)
@@ -89,7 +89,6 @@ class objPos:
         return np.array([x,y])
         
     def insert(self, point):
-        print("inserting point : ", point)
         if self.checkIfInGrid(point) == True:
             if point in self.cache[int(point[0])][int(point[1])]:
                 pass
@@ -97,15 +96,15 @@ class objPos:
                 self.cache[int(point[0])][int(point[1])].append(point) 
         else :
             new_point = self.findOriginalPoint(point)
-            if new_point in self.cache[int(new_point[0])][int(new_point[1])]:
+            if new_point in self.findOriginalPoint(point):
                 pass
             else :
                 self.cache[int(new_point[0])][int(new_point[1])].append(new_point) 
 
     def delete(self, point, mapped):
         #if self.checkIfInGrid(point) == True:
-        print("deleting point : ", point, mapped)
         if mapped == False:
+#            print("Deleting point : ", point, self.cache[int(point[0])][int(point[1])])
             self.cache[int(point[0])][int(point[1])] = [x for x in list(self.cache[int(point[0])][int(point[1])]) if x[0] != point[0] and x[1] != point[1]]
         else:
             new_point = self.findOriginalPoint(point)
@@ -178,7 +177,7 @@ class CacheGrid:
                         second_point = np.array([round(v[0],3), round(v[1] - self.grid[1],3)])
                         third_point = np.array([round(v[0] - self.grid[0],3), round(v[1] - self.grid[1],3)])
 
-        return [first_point, second_point, third_point]
+        return [v, first_point, second_point, third_point]
 
     def findNearest(self, vec):
         i = 0
@@ -250,8 +249,11 @@ class CacheGrid:
             if first > 4 * break_i:
                 mapped_points = self.get_mapped_points(c)
                 mapped = [(c, np.linalg.norm((c-v), ord=1)) for c in mapped_points]
-                best = min(mapped, key=operator.itemgetter(1))                
-                return [best[0], best[1], True]
+                best = min(mapped, key=operator.itemgetter(1))
+                if best != c:
+                    return [best[0], best[1], True]
+                else :
+                    return [best[0], best[1], False]
             else:
                 return [c , first, False]
 
