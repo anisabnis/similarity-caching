@@ -61,7 +61,6 @@ class Simulator:
             if i - prev_i >= jump_interval:
 
                 objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
-                print("iter : ", i, time.localtime(), len(self.cache.getAllPoints()), objective_value)
 
                 objective.append(objective_value)
 
@@ -78,10 +77,6 @@ class Simulator:
 
                 self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points, count, [self.grid_d, self.grid_d], self.learning_rate)
                 count += 1                
-
-
-
-        
 
 
 s = Simulator(2, 30, 100, 0.4, 100000000, 1, 0.005)
