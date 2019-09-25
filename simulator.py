@@ -9,7 +9,7 @@ class Simulator:
         #self.obj_catalogue = ObjectCatalogueGaussian(no_objects, 2, dim)
         #self.obj_catalogue = ObjectCatalogueUniform(no_objects, 0.8, dim)
 
-        self.grid_d = 30
+        self.grid_d = 313
 
         self.obj_catalogue = ObjectCatalogueGrid(self.grid_d, self.grid_d)        
 
@@ -79,7 +79,7 @@ class Simulator:
                 count += 1                
 
 
-s = Simulator(2, 30, 100, 0.4, 100000000, 1, 0.005)
+s = Simulator(2, 313, 100, 0.4, 100000000, 1, 0.02)
 s.simulate()                
 
 
