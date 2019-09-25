@@ -233,7 +233,7 @@ class CacheGrid:
                 a=a-1
                 
             if found == True and first == True:
-                break_i = math.ceil(i * 2)
+                break_i = math.ceil(i * 2) + 1
                 first = False
 
             i += 1
@@ -242,7 +242,6 @@ class CacheGrid:
         ## a = mapped point
         ## c = distance
         def dist(c, v, break_i):
-            min_dst = 10000
             first = np.linalg.norm((c-v), ord=1)
             if first > 4 * break_i:
                 mapped_points = self.get_mapped_points(c)
