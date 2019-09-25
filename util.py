@@ -503,16 +503,17 @@ class ObjectCatalogueGrid:
         jobs = []
         p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[0]*chunk_size:], objective_val, 8, cache, ))
         p.start()
-        jobs.append(p)
-        
+        jobs.append(p)        
+
         for i in range(1, len(sequence)):
             p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[i]*chunk_size:sequence[i-1]*chunk_size], objective_val, sequence[i], cache, ))
+
             jobs.append(p)
             p.start()
 
         for proc in jobs:
             proc.join()
-            
+
         obj = sum(objective_val.values())
         return obj
 

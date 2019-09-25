@@ -9,7 +9,7 @@ class Simulator:
         #self.obj_catalogue = ObjectCatalogueGaussian(no_objects, 2, dim)
         #self.obj_catalogue = ObjectCatalogueUniform(no_objects, 0.8, dim)
 
-        self.grid_d = 313
+        self.grid_d = 31
 
         self.obj_catalogue = ObjectCatalogueGrid(self.grid_d, self.grid_d)        
 
@@ -61,8 +61,8 @@ class Simulator:
 
             if i - prev_i >= jump_interval:
 
-                print("iter : ", i, time.localtime(), len(self.cache.getAllPoints()), obj.pos)
-                #objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
+                objective_value = self.obj_catalogue.objective_l1_iterative_threaded(self.cache)                
+                print("iter : ", i, time.localtime(), len(self.cache.getAllPoints()), objective_value)
                 #print("iter : ", i, time.localtime(), objective_value)
 
                 objective.append(objective_value)
@@ -81,7 +81,7 @@ class Simulator:
                 self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points, count, [self.grid_d, self.grid_d], self.learning_rate)
                 count += 1                
 
-s = Simulator(2, 313, 100, 0.4, 100000000, 1, 0.01)
+s = Simulator(2, 31, 100, 0.4, 100000000, 1, 0.001)
 s.simulate()                
 
 
