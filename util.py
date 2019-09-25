@@ -72,16 +72,16 @@ class objPos:
         x = 0
         y = 0
 
-        if v[0] > self.grid[0]:
+        if v[0] >= self.grid[0]:
             x = round(v[0] - self.grid[0],3)
-        elif v[0] < 0:
+        elif v[0] <= 0:
             x = round(v[0] + self.grid[0],3)
         else :
             x = round(v[0],3)
 
-        if v[1] > self.grid[1]:
+        if v[1] >= self.grid[1]:
             y = round(v[1] - self.grid[1],3)
-        elif v[1] < 0:
+        elif v[1] <= 0:
             y = round(v[1] + self.grid[1],3)
         else :
             y = round(v[1],3)
@@ -96,7 +96,7 @@ class objPos:
                 self.cache[int(point[0])][int(point[1])].append(point) 
         else :
             new_point = self.findOriginalPoint(point)
-            if new_point in self.findOriginalPoint(point):
+            if new_point in self.cache[int(new_point[0])][int(new_point[1])]:
                 pass
             else :
                 self.cache[int(new_point[0])][int(new_point[1])].append(new_point) 
@@ -104,7 +104,6 @@ class objPos:
     def delete(self, point, mapped):
         #if self.checkIfInGrid(point) == True:
         if mapped == False:
-#            print("Deleting point : ", point, self.cache[int(point[0])][int(point[1])])
             self.cache[int(point[0])][int(point[1])] = [x for x in list(self.cache[int(point[0])][int(point[1])]) if x[0] != point[0] and x[1] != point[1]]
         else:
             new_point = self.findOriginalPoint(point)
@@ -250,10 +249,10 @@ class CacheGrid:
                 mapped_points = self.get_mapped_points(c)
                 mapped = [(c, np.linalg.norm((c-v), ord=1)) for c in mapped_points]
                 best = min(mapped, key=operator.itemgetter(1))
-                if best != c:
-                    return [best[0], best[1], True]
-                else :
+                if best[0][0] == c[0] and best[0][1] == c[1]:
                     return [best[0], best[1], False]
+                else :
+                    return [best[0], best[1], True]
             else:
                 return [c , first, False]
 
