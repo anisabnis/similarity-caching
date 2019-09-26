@@ -8,7 +8,6 @@ class Simulator:
     def __init__(self, dim, capacity, no_objects, alpha, iter, update_interval, learning_rate):
         #self.obj_catalogue = ObjectCatalogueGaussian(no_objects, 2, dim)
         #self.obj_catalogue = ObjectCatalogueUniform(no_objects, 0.8, dim)
-
         self.grid_d = 313
 
         self.obj_catalogue = ObjectCatalogueGrid(self.grid_d, self.grid_d)        
@@ -27,7 +26,7 @@ class Simulator:
 
         self.learning_rate = learning_rate
 
-        os.system("mkdir " + str(self.grid_d) + "_" + str(learning_rate) + "_latest")        
+        os.system("mkdir " + str(self.grid_d) + "_" + str(learning_rate) + "_fixcache")        
         
 
     def write_stat(self, i, obj, f):
@@ -46,7 +45,7 @@ class Simulator:
 
         number_obj = len(self.cache.getAllPoints())
 
-        f = open(str(self.grid_d) + '_' + str(self.learning_rate) + '_latest' +  '/' + str("objective") + '.txt', 'w')                
+        f = open(str(self.grid_d) + '_' + str(self.learning_rate) + '_fixcache' +  '/' + str("objective") + '.txt', 'w')                
                
         for i in range(self.iter):
 
@@ -79,7 +78,7 @@ class Simulator:
                 count += 1                
 
 
-s = Simulator(2, 313, 100, 0.4, 100000000, 1, 0.02)
+s = Simulator(2, 313, 100, 0.4, 150000000, 1, 0.005)
 s.simulate()                
 
 

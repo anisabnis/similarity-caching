@@ -89,14 +89,19 @@ class objPos:
         return np.array([x,y])
         
     def insert(self, point):
+        def check(test,array):
+            return any(np.array_equal(x, test) for x in array)
+
         if self.checkIfInGrid(point) == True:
-            if len(self.cache[int(point[0])][int(point[1])]) > 0 and point in self.cache[int(point[0])][int(point[1])]:
+#            if len(self.cache[int(point[0])][int(point[1])]) > 0 and point in self.cache[int(point[0])][int(point[1])]:
+            if check(point, self.cache[int(point[0])][int(point[1])]) == True:
                 pass
             else:
                 self.cache[int(point[0])][int(point[1])].append(point) 
         else :
             new_point = self.findOriginalPoint(point)
-            if len(self.cache[int(new_point[0])][int(new_point[1])]) > 0 and new_point in self.cache[int(new_point[0])][int(new_point[1])]:
+            #if len(self.cache[int(new_point[0])][int(new_point[1])]) > 0 and new_point in self.cache[int(new_point[0])][int(new_point[1])]:
+            if check(new_point, self.cache[int(new_point[0])][int(new_point[1])]) == True:
                 pass
             else :
                 self.cache[int(new_point[0])][int(new_point[1])].append(new_point) 
@@ -124,13 +129,19 @@ class CacheGrid:
         self.grid = grid_s
         self.integral = integral
 
+        f = open("cache_pos.txt", "r")
+
         for index in range(capacity):
+            l = f.readline()
+            l = l.strip().split(" ")
             if integral == False:
                 v = np.random.rand(dim)
                 self.cache[index] = v
             else:
-                ii = np.random.randint(0, grid_s[0])
-                jj = np.random.randint(0, grid_s[1])
+                #ii = np.random.randint(0, grid_s[0])
+                #jj = np.random.randint(0, grid_s[1])
+                ii = int(l[0])
+                jj = int(l[1])
                 self.cache[index] = np.array([ii,jj])
 
         self.alpha = learning_rate
@@ -679,7 +690,7 @@ class Plots:
         #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_latest/cache_pos" + str(count) + ".png")
+        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_fixcache/cache_pos" + str(count) + ".png")
         plt.clf()
         
         
