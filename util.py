@@ -10,41 +10,6 @@ from collections import defaultdict
 import multiprocessing
 getcontext().prec = 2
 
-# new random covar
-def new_random_cov(n):
-    if n == 1:
-        return random.uniform(0.05, 0.1)
-
-    # random matrix generation
-    A = []
-    for i in range(0, n):
-        A.append([])
-        for j in range(0, n):
-            A[i].append([])
-
-    for i in range(0, n):
-        for j in range(0, n):
-            A[i][j] = np.random.triangular(-0.1, 0, 0.1)
-
-    A = np.array(A)
-    B = np.matmul(A, A.transpose())
-    C = np.zeros((n, n))
-
-    for i in range(0, n):
-        diago = 1 / math.sqrt(B[i][i])
-        C[i][i] = diago
-    first_mol = np.matmul(C, B)
-    C = np.matmul(first_mol, C)
-    D = np.zeros((n, n))
-
-    for i in range(0, n):
-        diago = np.random.uniform(0.05, 0.1)
-        D[i][i] = diago
-    first_mol = np.matmul(D, C)
-    res = np.matmul(first_mol, D)
-    return res
-
-
 """ All attributes of a cache object """
 class CacheObject:
     counter = 0
@@ -93,14 +58,12 @@ class objPos:
             return any(np.array_equal(x, test) for x in array)
 
         if self.checkIfInGrid(point) == True:
-#            if len(self.cache[int(point[0])][int(point[1])]) > 0 and point in self.cache[int(point[0])][int(point[1])]:
             if check(point, self.cache[int(point[0])][int(point[1])]) == True:
                 pass
             else:
                 self.cache[int(point[0])][int(point[1])].append(point) 
         else :
             new_point = self.findOriginalPoint(point)
-            #if len(self.cache[int(new_point[0])][int(new_point[1])]) > 0 and new_point in self.cache[int(new_point[0])][int(new_point[1])]:
             if check(new_point, self.cache[int(new_point[0])][int(new_point[1])]) == True:
                 pass
             else :
@@ -138,8 +101,6 @@ class CacheGrid:
                 v = np.random.rand(dim)
                 self.cache[index] = v
             else:
-                #ii = np.random.randint(0, grid_s[0])
-                #jj = np.random.randint(0, grid_s[1])
                 ii = int(l[0])
                 jj = int(l[1])
                 self.cache[index] = np.array([ii,jj])
@@ -249,9 +210,7 @@ class CacheGrid:
 
             i += 1
 
-        ## Returns [a, c]
-        ## a = mapped point
-        ## c = distance
+
         def dist(c, v, break_i):
             first = np.linalg.norm((c-v), ord=1)
             if first > 4 * break_i:
@@ -265,154 +224,6 @@ class CacheGrid:
         candidates = [dist(c, vec, break_i) for c in candidates]
         best_candidate = min(candidates, key=operator.itemgetter(1))
         return [best_candidate[0], best_candidate[1], best_candidate[2]]
-
-            
-""" All attributes and functions of a cache """
-class Cache:
-    def __init__(self, capacity, dim, learning_rate, integral=False, grid_s=[313,313]):
-        #self.cache = np.random.rand(capacity, dim)
-
-        self.cache = {}
-        self.grid = grid_s
-        self.integral = integral
-
-        for index in range(capacity):
-            if integral == False:
-                v = np.random.rand(dim)
-                self.cache[index] = v
-            else:
-                ii = np.random.randint(0, grid_s[0])
-                jj = np.random.randint(0, grid_s[1])
-                self.cache[index] = np.array([ii,jj])
-
-        self.alpha = learning_rate
-        self.capacity = capacity
-        self.initializeLSH(dim)        
-
-    def getAllPoints(self):
-        return self.lsh.get_all_points()
-
-
-    def extraPoints(self, v, delete=False):
-        update = False
-        if v[0] <= float(self.grid[0]/2) and v[0] >= 0:
-            if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
-                first_point = np.array([round(v[0] + self.grid[0], 3), round(v[1],3)])
-                second_point = np.array([round(v[0], 3), round(v[1] + self.grid[1],3)])
-                third_point = np.array([round(v[0] + self.grid[0],3), round(v[1] + self.grid[1],3)])
-                update = True
-            else:
-                if v[1] > float(self.grid[1]/2)  and v[1] <= self.grid[1]:
-                    first_point = np.array([round(v[0] + self.grid[0],3), round(v[1],3)])
-                    second_point = np.array([round(v[0],3), round(v[1] - self.grid[1],3)])
-                    third_point = np.array([round(v[0] + self.grid[0],3), round(v[1] - self.grid[1],3)])
-                    update = True
-        else :
-            if v[0] > float(self.grid[0]/2) and v[0] <= self.grid[0]:
-                if v[1] <= float(self.grid[1]/2) and v[1] >= 0:
-                    first_point = np.array([round(v[0] - self.grid[0],3), round(v[1],3)])
-                    second_point = np.array([round(v[0],3) , round(v[1] + self.grid[1],3)])
-                    third_point = np.array([round(v[0] - self.grid[0],3), round(v[1] + self.grid[1],3)])
-                    update = True
-                else:
-                    if v[1] > float(self.grid [1]/2) and v[1]  <= self.grid[1]:
-                        first_point = np.array([round(v[0] - self.grid[0],3), round(v[1],3)])
-                        second_point = np.array([round(v[0],3), round(v[1] - self.grid[1],3)])
-                        third_point = np.array([round(v[0] - self.grid[0],3), round(v[1] - self.grid[1],3)])
-                        update = True
-
-        
-        if update == False:
-            return 
-        elif delete == False:
-            self.lsh.index(first_point)
-            self.lsh.index(second_point)
-            self.lsh.index(third_point)
-        else:
-            self.lsh.delete_vector(first_point)
-            self.lsh.delete_vector(second_point)
-            self.lsh.delete_vector(third_point)                        
-
-            
-    def checkIfInGrid(self, v):
-        if v[0] >= 0 and v[0] <= self.grid[0] and v[1] >= 0 and v[1] <= self.grid[1]:
-            return True
-        else:
-            return False
-
-    def findOriginalPoint(self, v):
-        x = 0
-        y = 0
-
-        if v[0] >= self.grid[0]:
-            x = round(v[0] - self.grid[0],3)
-        elif v[0] <= 0:
-            x = round(v[0] + self.grid[0],3)
-        else :
-            x = round(v[0],3)
-
-        if v[1] >= self.grid[1]:
-            y = round(v[1] - self.grid[1],3)
-        elif v[1] <= 0:
-            y = round(v[1] + self.grid[1],3)
-        else :
-            y = round(v[1],3)
-
-        return np.array([x,y])
-
-    
-    def initializeLSH(self, dim):        
-        self.lsh = LSHash(4, dim, 6)
-        for index in range(self.capacity):
-            v = self.cache[index]
-            if self.integral == False:
-                self.lsh.index(v)
-            else:
-                self.lsh.index(v)
-                self.extraPoints(v)
-                
-    def updateCache(self, src_obj_pos, dst_obj):
-        ## Delete the point
-        if self.checkIfInGrid(src_obj_pos) == True:
-            self.lsh.delete_vector(src_obj_pos)
-            self.extraPoints(src_obj_pos, True)
-        else :
-            v = self.findOriginalPoint(src_obj_pos)
-            self.lsh.delete_vector(v)
-            self.extraPoints(v, True)
-
-        ## Add the new point            
-        if self.checkIfInGrid(dst_obj.pos) == True:
-            self.lsh.index(dst_obj.pos)
-            self.extraPoints(dst_obj.pos)
-        else:
-            v = self.findOriginalPoint(dst_obj.pos)
-            self.lsh.index(v)
-            self.extraPoints(v)
-
-    
-    def updateCacheDict(self, src_obj_pos, dst_obj):
-        self.updateCache(src_obj_pos, dst_obj)
-
-    def findNearest(self, vec):
-        nearest_point = []
-        min_dst = 10000
-        min_id = 0
-
-        for index in self.cache:
-            if np.linalg.norm(self.cache[index] - vec) < min_dst:
-                nearest_point = self.cache[index]
-                min_dst = np.linalg.norm(self.cache[index] - vec)
-                min_id = index
-
-        return [nearest_point, min_id]            
-            
-
-    def findNearestANN(self, vec):
-        K = self.lsh.query(vec)
-        nearest_point = K[0]
-        min_dst = K[1]
-        return [nearest_point, min_dst]
 
 
 """ Object Catalogue """
@@ -459,6 +270,10 @@ class ObjectCatalogueGrid:
         self.dim_y = dim_y
         self.means = []
         self.obj_id = 0
+        self.center = np.array([float(dim_x)/2, float(dim_y)/2])
+        self.rho = (self.dim_x ** 2)/64 #39.125 *  2 * 39.125
+        self.rho *= 2
+        self.obj_count_distance = defaultdict(int)
 
         for i in range(dim_x):
             for j in range(dim_y):
@@ -474,7 +289,22 @@ class ObjectCatalogueGrid:
         obj = self.catalogue[index]
         return obj
         
+    def getRequestGaussian(self):
+        iter = 0
+        while 1:
+            i = np.random.randint(self.dim_x + 1)
+            j = np.random.randint(self.dim_y + 1)
+            point = np.array([i,j])
+            distance = np.linalg.norm(point - self.center, ord=1)
+            acc_distance = int(distance)
+            distance = float(distance ** 2)/self.rho
 
+            r_no = random.random()
+            if r_no < np.exp(-distance):
+                self.obj_count_distance[int(acc_distance)] += 1            
+                return point
+            iter += 1
+                
     def objective(self, cache):
         obj = 0
         for c_obj in self.catalogue:
@@ -493,15 +323,23 @@ class ObjectCatalogueGrid:
             obj += K[1]            
         return obj
 
-    def objective_l1_iterative(self, sub_catalogue, objective_dict, i, cache):
+    def objective_l1_iterative(self, sub_catalogue, objective_dict, i, cache, t):
         obj = 0
-        for c_obj in sub_catalogue:
-            K = cache.findNearest(c_obj.pos)
-            obj += K[1]
-        objective_dict[i] = obj
-        return 
+        if t == "uniform":
+            for c_obj in sub_catalogue:
+                K = cache.findNearest(c_obj.pos)
+                obj += K[1]
+            objective_dict[i] = obj
+            return
+        else :
+            for c_obj in sub_catalogue:
+                K = cache.findNearest(c_obj.pos)
+                obj += (K[1] * c_obj.rate)
+            objective_dict[i] = obj
+            return    
 
-    def objective_l1_iterative_threaded(self, cache):
+
+    def objective_l1_iterative_threaded(self, cache, t="uniform"):
         manager = multiprocessing.Manager()
         objective_val = manager.dict()
         obj = 0
@@ -511,7 +349,7 @@ class ObjectCatalogueGrid:
         chunk_size = int(len(self.catalogue)/8)
 
         jobs = []
-        p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[0]*chunk_size:], objective_val, 8, cache, ))
+        p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[0]*chunk_size:], objective_val, 8, cache, t,))
         p.start()
         jobs.append(p)        
 
@@ -526,51 +364,6 @@ class ObjectCatalogueGrid:
 
         obj = sum(objective_val.values())
         return obj
-
-    
-
-class ObjectCatalogueGrid2:
-    def __init__(self, dim_x, dim_y):
-        self.catalogue = []
-        self.dim_x = dim_x
-        self.dim_y = dim_y
-        self.means = []
-        self.obj_id = 0
-
-        for i in range(dim_x):
-            for j in range(dim_y):
-
-                pos = np.array([i,j])
-                c_obj = CacheObject(self.obj_id, pos)                
-                self.catalogue.append(c_obj)
-                self.means.append(pos)
-                self.obj_id += 1
-                
-    def getRequest(self):
-        index = np.random.randint(0, self.obj_id)
-        obj = self.catalogue[index]
-        return obj
-        
-
-    def objective(self, cache):
-        obj = 0
-        for c_obj in self.catalogue:
-            min_dst = 100000
-            for c in cache:
-                if np.linalg.norm(c_obj.pos - c) < min_dst:
-                    min_dst =  np.linalg.norm(c_obj.pos - c)
-            obj += min_dst
-        return obj
-
-
-    def objective_l1(self, cache):
-        obj = 0
-        for c_obj in self.catalogue:
-            K = cache.lsh.query(c_obj.pos)
-            obj += K[1]            
-        return obj
-
-
 
     
 """ Object Catalogue """
@@ -690,7 +483,7 @@ class Plots:
         #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_fixcache/cache_pos" + str(count) + ".png")
+        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_fixcache_2/cache_pos" + str(count) + ".png")
         plt.clf()
         
         

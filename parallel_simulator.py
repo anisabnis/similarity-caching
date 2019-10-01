@@ -35,20 +35,6 @@ class Simulator:
         f.flush()
                 
 
-
-    def write_rare_requests(self, req, np, f):
-        f.write(' '.join([str(r) for r in req]))
-        f.write(' ')
-        f.write(' '.join([str(p) for p in np]))
-        f.write('\n')
-        f.flush()
-        
-
-    def write_distance_count(self, distance_count, f):
-        for d in distance_count:
-            f.write(str(d) + " " + str(distance_count[d]) + "\n")
-            f.flush()
-
     def simulate(self):
         objective = [] 
         objective_value = 0
@@ -63,8 +49,8 @@ class Simulator:
                
         for i in range(self.iter):
 
-            obj = self.obj_catalogue.getRequestGaussian()
-            pos = obj
+            obj = self.obj_catalogue.getRequest()
+            pos = obj.pos
 
             [nearest_obj, dst, mapped] = self.cache.findNearest(pos)                        
 
@@ -92,12 +78,8 @@ class Simulator:
                 self.plot.plot_cache_pos_grid(self.cache.getAllPoints(), self.obj_catalogue.means, self.initial_points, count, [self.grid_d, self.grid_d], self.learning_rate)
                 count += 1                
 
-                
-        f2 = open(str(self.grid_d) + '_' + str(self.learning_rate) + '_fixcache_2' +  '/distances.txt', 'w')
-        self.write_distance_count(self.obj_catalogue.obj_count_distance, f2)
 
-
-s = Simulator(2, 313, 100, 0.4, 150000000, 1, 0.01)
+s = Simulator(2, 313, 100, 0.4, 150000000, 1, 0.001)
 s.simulate()                
 
 
