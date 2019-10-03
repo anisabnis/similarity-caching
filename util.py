@@ -8,16 +8,19 @@ import operator
 from decimal import *
 from collections import defaultdict
 import multiprocessing
+import random
 getcontext().prec = 2
 
 """ All attributes of a cache object """
 class CacheObject:
     counter = 0
 
-    def __init__(self, id, vec, size=1):
+    def __init__(self, id, vec, center=[0,0], rho=0, size=1):
         CacheObject.counter += 1
         self.id = CacheObject.counter
         self.pos = vec
+        dist = np.linalg.norm(vec - center, ord=1)
+        self.rate = np.exp(-(dist ** 2)/rho)
         self.size = size
 
 
@@ -33,20 +36,20 @@ class objPos:
             return False
 
 
-    def findOriginalPoint(self, v):
+    def findOriginalPoint(self, v, mapped_x, mapped_y):
         x = 0
         y = 0
 
-        if v[0] >= self.grid[0]:
+        if v[0] >= self.grid[0] and mapped_x == True:
             x = round(v[0] - self.grid[0],3)
-        elif v[0] <= 0:
+        elif v[0] <= 0 and mapped_x == True:
             x = round(v[0] + self.grid[0],3)
         else :
             x = round(v[0],3)
 
-        if v[1] >= self.grid[1]:
+        if v[1] >= self.grid[1] and mapped_y == True:
             y = round(v[1] - self.grid[1],3)
-        elif v[1] <= 0:
+        elif v[1] <= 0 and mapped_y == True:
             y = round(v[1] + self.grid[1],3)
         else :
             y = round(v[1],3)
@@ -63,18 +66,23 @@ class objPos:
             else:
                 self.cache[int(point[0])][int(point[1])].append(point) 
         else :
-            new_point = self.findOriginalPoint(point)
+            new_point = self.findOriginalPoint(point, True, True)
             if check(new_point, self.cache[int(new_point[0])][int(new_point[1])]) == True:
                 pass
             else :
                 self.cache[int(new_point[0])][int(new_point[1])].append(new_point) 
 
-    def delete(self, point, mapped):
-        if mapped == False:
+    def delete(self, point, mapped_x, mapped_y):
+        if mapped_x == False and mapped_y == False:
+#            print("before : ", point, self.cache[int(point[0])][int(point[1])])
             self.cache[int(point[0])][int(point[1])] = [x for x in list(self.cache[int(point[0])][int(point[1])]) if x[0] != point[0] and x[1] != point[1]]
+#            print("after : ", point, self.cache[int(point[0])][int(point[1])])
         else:
-            new_point = self.findOriginalPoint(point)
+            new_point = self.findOriginalPoint(point, mapped_x, mapped_y)
+ #           print("before : ", new_point, self.cache[int(new_point[0])][int(new_point[1])])
             self.cache[int(new_point[0])][int(new_point[1])] = [x for x in list(self.cache[int(new_point[0])][int(new_point[1])]) if x[0] != new_point[0] and x[1] != new_point[1]]
+  
+#          print("before : ", new_point, self.cache[int(new_point[0])][int(new_point[1])])
 
     def get_all_points(self):
         points = []
@@ -117,12 +125,12 @@ class CacheGrid:
         for index in range(self.capacity):
             self.obj_pos.insert(self.cache[index])
                                         
-    def updateCache(self, src_obj_pos, dst_obj, mapped):
-        self.obj_pos.delete(src_obj_pos, mapped)
+    def updateCache(self, src_obj_pos, dst_obj, mapped_x, mapped_y):
+        self.obj_pos.delete(src_obj_pos, mapped_x, mapped_y)
         self.obj_pos.insert(dst_obj)
         
-    def updateCacheDict(self, src_obj_pos, dst_obj, mapped):
-        self.updateCache(src_obj_pos, dst_obj, mapped)
+    def updateCacheDict(self, src_obj_pos, dst_obj, mapped_x, mapped_y):
+        self.updateCache(src_obj_pos, dst_obj, mapped_x, mapped_y)
 
     def get_mapped_points(self, v):
         if v[0] <= float(self.grid[0]/2) and v[0] >= 0:
@@ -217,13 +225,19 @@ class CacheGrid:
                 mapped_points = self.get_mapped_points(c)
                 mapped = [(c, np.linalg.norm((c-v), ord=1)) for c in mapped_points]
                 best = min(mapped, key=operator.itemgetter(1))                
-                return [best[0], best[1], True]
+                if best[0][0] == mapped_points[0][0] and best[0][1] == mapped_points[0][1]:
+                    return [best[0], best[1], True, False]
+                elif best[0][0] == mapped_points[1][0] and best[0][1] == mapped_points[1][1]:
+                    return [best[0], best[1], False, True]
+                else :
+                    return [best[0], best[1], True, True]
+
             else:
-                return [c , first, False]
+                return [c , first, False, False]
 
         candidates = [dist(c, vec, break_i) for c in candidates]
         best_candidate = min(candidates, key=operator.itemgetter(1))
-        return [best_candidate[0], best_candidate[1], best_candidate[2]]
+        return [best_candidate[0], best_candidate[1], best_candidate[2], best_candidate[3]]
 
 
 """ Object Catalogue """
@@ -279,7 +293,7 @@ class ObjectCatalogueGrid:
             for j in range(dim_y):
 
                 pos = np.array([i,j])
-                c_obj = CacheObject(self.obj_id, pos)                
+                c_obj = CacheObject(self.obj_id, pos, self.center, self.rho)                
                 self.catalogue.append(c_obj)
                 self.means.append(pos)
                 self.obj_id += 1
@@ -287,7 +301,7 @@ class ObjectCatalogueGrid:
     def getRequest(self):
         index = np.random.randint(0, self.obj_id)
         obj = self.catalogue[index]
-        return obj
+        return obj.pos
         
     def getRequestGaussian(self):
         iter = 0
@@ -329,10 +343,12 @@ class ObjectCatalogueGrid:
             for c_obj in sub_catalogue:
                 K = cache.findNearest(c_obj.pos)
                 obj += K[1]
+                i += 1
             objective_dict[i] = obj
             return
         else :
             for c_obj in sub_catalogue:
+                i += 1
                 K = cache.findNearest(c_obj.pos)
                 obj += (K[1] * c_obj.rate)
             objective_dict[i] = obj
@@ -354,7 +370,7 @@ class ObjectCatalogueGrid:
         jobs.append(p)        
 
         for i in range(1, len(sequence)):
-            p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[i]*chunk_size:sequence[i-1]*chunk_size], objective_val, sequence[i], cache, ))
+            p = multiprocessing.Process(target=self.objective_l1_iterative, args=(self.catalogue[sequence[i]*chunk_size:sequence[i-1]*chunk_size], objective_val, sequence[i], cache, t, ))
 
             jobs.append(p)
             p.start()
@@ -425,8 +441,9 @@ class StochasticGradientDescent:
 
 """ Plot generation code """
 class Plots:
-    def __init__(self):
-        pass
+    def __init__(self, exp_type, fne):
+        self.exp_type = exp_type
+        self.fne = fne
 
     def plot(self, time_series, grid_d, learning_rate):
         plt.plot(time_series)
@@ -455,8 +472,6 @@ class Plots:
         plt.show()
         plt.clf()
         
-
-
     def checkIfInGrid(self, v, grid):
         if v[0] >= 0 and v[0] <= grid[0] and v[1] >= 0 and v[1] <= grid[1]:
             return True
@@ -467,23 +482,20 @@ class Plots:
         cache_objs = cache
         cache_objs = [v for v in cache_objs if self.checkIfInGrid(v, grid) == True]
         xs = [l[0] for l in cache_objs]
-#        xs = [x for x in xs if x >=0 and x <= grid[0]]
+
         ys = [l[1] for l in cache_objs]
-#        ys = [y for y in ys if y >= 0 and y <= grid[1]]
         plt.scatter(xs, ys, marker='+', label="cache")
         
         obj_cata = obj_means
         xs = [l[0] for l in obj_cata]
         ys = [l[1] for l in obj_cata]
-        #plt.scatter(xs, ys, marker='*', label="obj_mean")
 
         cache_objs = cache_init #list(cache_init.values())
         xs = [l[0] for l in cache_objs]
         ys = [l[1] for l in cache_objs]
-        #plt.scatter(xs, ys, marker='o', label="initial")
 
         plt.legend()
-        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_fixcache_2/cache_pos" + str(count) + ".png")
+        plt.savefig(str(grid[0]) + "_" + str(learning_rate) + "_" + self.exp_type + "_" + self.fne + "/cache_pos" + str(count) + ".png")
         plt.clf()
         
         
